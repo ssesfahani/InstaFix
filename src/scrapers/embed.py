@@ -1,18 +1,23 @@
 import json
-
+import asyncio
 import aiohttp
 from selectolax.parser import HTMLParser
 
 from src.internal.jslex import JsLexer
 from src.scrapers.data import Media, Post
 
-
+limit = asyncio.Semaphore(50)
 async def get_embed(post_id: str) -> Post | None:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            f"https://www.instagram.com/p/{post_id}/embed/captioned/"
-        ) as response:
-            html = await response.text()
+    async with limit:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://www.instagram.com/p/{post_id}/embed/captioned/"
+            ) as response:
+                html = await response.text()
+
+        if limit.locked():
+            print("Concurrency limit reached, waiting ...")
+            await asyncio.sleep(1)
 
     medias = []
     tree = HTMLParser(html)
