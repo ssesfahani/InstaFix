@@ -38,28 +38,28 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
     else:
         post = await get_embed(post_id)
         cache[post_id] = msgspec.json.encode(post)
-        
+
+    jinja_ctx = {
+        "theme_color": "#0084ff",
+        "twitter_title": post.username,
+        "og_site_name": "InstaFix",
+        "og_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
+        "og_description": post.caption,
+        "redirect_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
+    }
     if post.medias[0].type == "GraphImage" and len(post.medias) > 2:
-        embed_media = f"/grid/{post.post_id}/"
+        jinja_ctx["image_url"] = f"/grid/{post.post_id}/"
     elif post.medias[0].type == "GraphVideo":
-        embed_media = f"/videos/{post.post_id}/1"
+        jinja_ctx["video_url"] = f"/videos/{post.post_id}/1"
     else:
-        embed_media = f"/images/{post.post_id}/1"
+        jinja_ctx["image_url"] = f"/images/{post.post_id}/1"
 
     return templates.TemplateResponse(
         request=request,
         name="embed.html",
-        context={
-            "theme_color": "#0084ff",
-            "twitter_title": post.username,
-            "twitter_image": embed_media,
-            "og_site_name": "InstaFix",
-            "og_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
-            "og_description": post.caption,
-            "og_image": embed_media,
-            "redirect_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
-        },
+        context=jinja_ctx,
     )
+
 
 @app.get("/videos/{post_id}/{media_id}")
 @app.get("/images/{post_id}/{media_id}")
@@ -71,8 +71,9 @@ async def media_redirect(post_id: str, media_id: str):
     else:
         post = msgspec.json.decode(post, type=Post)
 
-    media = post.medias[int(media_id)-1]
+    media = post.medias[int(media_id) - 1]
     return RedirectResponse(media.url)
+
 
 @app.get("/grid/{post_id}")
 async def grid(post_id: str):
