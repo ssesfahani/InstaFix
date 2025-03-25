@@ -43,9 +43,10 @@ async def get_embed(post_id: str) -> Post | None:
                             medias.append(Media(url=media_url, type="GraphImage"))
 
     # ---- from html parsing (mostly single image post) ----
-    if usernameFind := tree.css_first("a.CaptionUsername"):
+    if usernameFind := tree.css_first("span.UsernameText"):
         username = usernameFind.text()
     else:
+        print("username not found")
         return None
 
     caption = ""
@@ -61,6 +62,7 @@ async def get_embed(post_id: str) -> Post | None:
                 medias.append(Media(url=media_url, type="GraphImage"))
 
     if len(medias) == 0:
+        print("empty medias")
         return None
 
     return Post(
