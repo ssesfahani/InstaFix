@@ -7,7 +7,7 @@ from src.internal.jslex import JsLexer
 from src.scrapers.data import Media, Post
 
 
-async def get_embed(post_id: str) -> Post:
+async def get_embed(post_id: str) -> Post | None:
     async with aiohttp.ClientSession() as session:
         async with session.get(
             f"https://www.instagram.com/p/{post_id}/embed/captioned/"
@@ -42,8 +42,14 @@ async def get_embed(post_id: str) -> Post:
                             medias.append(Media(url=media_url, type="GraphImage"))
 
     # ---- from html parsing (mostly single image post) ----
-    username = tree.css_first("a.CaptionUsername").text()
-    caption = tree.css_first("div.Caption").text(deep=False)
+    if usernameFind := tree.css_first("a.CaptionUsername"):
+        username = usernameFind.text()
+    else:
+        return None
+
+    caption = ""
+    if captionFind := tree.css_first("div.Caption"):
+        caption = captionFind.text(deep=False)
 
     # Find media
     if len(medias) == 0:
@@ -52,6 +58,9 @@ async def get_embed(post_id: str) -> Post:
             media_url = media_html["src"]
             if media_url:
                 medias.append(Media(url=media_url, type="GraphImage"))
+
+    if len(medias) == 0:
+        return None
 
     return Post(
         post_id=post_id,
