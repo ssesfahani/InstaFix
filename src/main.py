@@ -1,10 +1,11 @@
+import os
 from io import BytesIO
 from typing import Union
 
 import aiohttp
 import msgspec
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from PIL import Image
 
@@ -14,7 +15,6 @@ from src.scrapers.data import Post
 from src.scrapers.embed import get_embed
 
 app = FastAPI()
-
 templates = Jinja2Templates(directory="templates")
 
 
@@ -77,6 +77,9 @@ async def media_redirect(post_id: str, media_id: str):
 
 @app.get("/grid/{post_id}")
 async def grid(post_id: str):
+    if os.path.exists(f"cache/grid/{post_id}.jpeg"):
+        return FileResponse(f"cache/grid/{post_id}.jpeg", media_type="image/jpeg")
+
     post = cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
@@ -96,6 +99,5 @@ async def grid(post_id: str):
     if grid_img is None:
         raise
 
-    res = BytesIO()
-    grid_img.save(res, format="JPEG")
-    return Response(content=res.read(), media_type="image/jpeg")
+    grid_img.save(f"cache/grid/{post_id}.jpeg", format="JPEG")
+    return FileResponse(f"cache/grid/{post_id}.jpeg", media_type="image/jpeg")

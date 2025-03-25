@@ -26,7 +26,7 @@ def create_graph(images_wh, start, canvas_width):
 
 def generate_grid(images):
     """Generate a grid image based on the best row layout."""
-    images_wh = [(img.width, img.height) for img in images] + [(0,0)]
+    images_wh = [(img.width, img.height) for img in images] + [(0, 0)]
     canvas_width = int(sum(w for w, _ in images_wh) / len(images_wh) * 1.5)
 
     G = nx.DiGraph()
@@ -42,7 +42,7 @@ def generate_grid(images):
 
     canvas_height, row_heights = 0, []
     for i in range(1, len(path)):
-        row_height = int(get_height(images_wh[path[i - 1]: path[i]], canvas_width))
+        row_height = int(get_height(images_wh[path[i - 1] : path[i]], canvas_width))
         row_heights.append(row_height)
         canvas_height += row_height
 
@@ -50,7 +50,7 @@ def generate_grid(images):
     y_offset = 0
 
     for i in range(1, len(path)):
-        row = images[path[i - 1]: path[i]]
+        row = images[path[i - 1] : path[i]]
         row_height = row_heights[i - 1]
         x_offset = 0
 
