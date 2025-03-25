@@ -13,6 +13,7 @@ from internal.grid_layout import generate_grid
 from scrapers.data import Post
 from scrapers.embed import get_embed
 from scrapers.share import resolve_share_id
+from loguru import logger
 
 env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
 embed_template = env.get_template("embed.html")
@@ -41,6 +42,7 @@ async def embed(request):
     else:
         post = msgspec.json.decode(post, type=Post)
 
+    logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
@@ -76,6 +78,7 @@ async def media_redirect(request):
     else:
         post = msgspec.json.decode(post, type=Post)
 
+    logger.debug(f"media_redirect({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
@@ -100,6 +103,7 @@ async def grid(request):
     else:
         post = msgspec.json.decode(post, type=Post)
 
+    logger.debug(f"grid({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
