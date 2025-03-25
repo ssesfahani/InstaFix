@@ -1,0 +1,7 @@
+*
+
+!*.py
+!README.md
+!templates/*.html
+
+!*/
