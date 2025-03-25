@@ -64,7 +64,7 @@ async def embed(request):
     else:
         jinja_ctx["image_url"] = f"/images/{post.post_id}/1"
 
-    return web.Response(body=embed_template.render(**jinja_ctx).encode())
+    return web.Response(body=embed_template.render(**jinja_ctx).encode(), content_type="text/html")
 
 
 async def media_redirect(request):
@@ -93,7 +93,7 @@ async def grid(request):
     post_id = request.match_info.get("post_id", "")
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
-            return web.Response(body=f.read())
+            return web.Response(body=f.read(), content_type="image/jpeg")
 
     post = post_cache.get(post_id)
     if post is None:
@@ -124,7 +124,7 @@ async def grid(request):
 
     grid_img.save(f"cache/grid/{post_id}.jpeg", format="JPEG")
     with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
-        return web.Response(body=f.read())
+        return web.Response(body=f.read(), content_type="image/jpeg")
 
 
 if __name__ == "__main__":
