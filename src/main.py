@@ -144,6 +144,19 @@ if __name__ == "__main__":
             web.get("/images/{post_id}/{media_id}", media_redirect),
             web.get("/videos/{post_id}/{media_id}", media_redirect),
             web.get("/grid/{post_id}", grid),
+
+            web.get("/p/{post_id}/", embed),
+            web.get("/p/{post_id}/{media_num}/", embed),
+            web.get("/{username}/p/{post_id}/", embed),
+            web.get("/{username}/p/{post_id}/{media_num}/", embed),
+            web.get("/{username}/reel/{post_id}/", embed),
+            web.get("/tv/{post_id}/", embed),
+            web.get("/reel/{post_id}/", embed),
+            web.get("/reels/{post_id}/", embed),
+            web.get("/stories/{username}/{post_id}/", embed),
+            web.get("/images/{post_id}/{media_id}/", media_redirect),
+            web.get("/videos/{post_id}/{media_id}/", media_redirect),
+            web.get("/grid/{post_id}/", grid),
         ]
     )
     web.run_app(app)
