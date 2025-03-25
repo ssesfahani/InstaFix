@@ -13,6 +13,7 @@ from src.cache import cache
 from src.internal.grid_layout import generate_grid
 from src.scrapers.data import Post
 from src.scrapers.embed import get_embed
+from src.scrapers.share import resolve_share_id
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -33,6 +34,15 @@ async def home():
 @app.get("/{username}/p/{post_id}/{media_num}")
 @app.get("/{username}/reel/{post_id}")
 async def embed(request: Request, post_id: str, media_num: Union[str, None] = None):
+    if post_id[0] == "B":
+        resolve_id = await resolve_share_id(post_id)
+        if resolve_id:
+            post_id = resolve_id
+        else:
+            return RedirectResponse(
+                f"https://www.instagram.com/p/{post_id}", status_code=302
+            )
+
     post = cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
@@ -43,7 +53,9 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(f"https://www.instagram.com/p/{post_id}", status_code=302)
+        return RedirectResponse(
+            f"https://www.instagram.com/p/{post_id}", status_code=302
+        )
 
     jinja_ctx = {
         "theme_color": "#0084ff",
@@ -80,7 +92,9 @@ async def media_redirect(post_id: str, media_id: str):
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(f"https://www.instagram.com/p/{post_id}", status_code=302)
+        return RedirectResponse(
+            f"https://www.instagram.com/p/{post_id}", status_code=302
+        )
 
     media = post.medias[int(media_id) - 1]
     return RedirectResponse(media.url)
@@ -101,7 +115,9 @@ async def grid(post_id: str):
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(f"https://www.instagram.com/p/{post_id}", status_code=302)
+        return RedirectResponse(
+            f"https://www.instagram.com/p/{post_id}", status_code=302
+        )
 
     images = []
     async with aiohttp.ClientSession() as session:

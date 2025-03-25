@@ -1,6 +1,9 @@
+import asyncio
 from typing import List
 
 import msgspec
+
+proxy_limit = asyncio.Semaphore(50)
 
 
 class Media(msgspec.Struct):
