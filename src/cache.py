@@ -1,7 +1,58 @@
-import dbm.dumb
 import os
+import sqlite3
+import time
+
+class SQLiteCache:
+    def __init__(self, db_path="cache.db", ttl=300):
+        self.conn = sqlite3.connect(db_path)
+        self.cursor = self.conn.cursor()
+        self.ttl = ttl
+        self._create_table()
+
+    def _create_table(self):
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cache (
+                key TEXT PRIMARY KEY,
+                value BLOB,
+                timestamp REAL
+            )
+            """
+        )
+        self.conn.commit()
+
+    def set(self, key, value):
+        timestamp = time.time()
+        self.cursor.execute(
+            "REPLACE INTO cache (key, value, timestamp) VALUES (?, ?, ?)",
+            (key, value, timestamp),
+        )
+        self.conn.commit()
+
+    def get(self, key):
+        self.cursor.execute("SELECT value, timestamp FROM cache WHERE key = ?", (key,))
+        row = self.cursor.fetchone()
+        if row:
+            value, timestamp = row
+            if time.time() - timestamp < self.ttl:
+                return value
+            else:
+                self.delete(key)  # Remove expired entry
+        return None
+
+    def delete(self, key):
+        self.cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
+        self.conn.commit()
+
+    def clear(self):
+        self.cursor.execute("DELETE FROM cache")
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 
 if os.path.exists("cache") is False:
     os.makedirs("cache")
     os.makedirs("cache/grid")
-cache = dbm.dumb.open("cache/post_data", "c")
+post_cache = SQLiteCache(db_path="cache/post_data.db", ttl=24 * 60 * 60)

@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from PIL import Image
 
-from src.cache import cache
+from src.cache import post_cache
 from src.internal.grid_layout import generate_grid
 from src.scrapers.data import Post
 from src.scrapers.embed import get_embed
@@ -43,11 +43,11 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
                 f"https://www.instagram.com/p/{post_id}", status_code=302
             )
 
-    post = cache.get(post_id)
+    post = post_cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
         if post:
-            cache[post_id] = msgspec.json.encode(post)
+            post_cache.set(post_id, msgspec.json.encode(post))
     else:
         post = msgspec.json.decode(post, type=Post)
 
@@ -82,11 +82,11 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
 @app.get("/videos/{post_id}/{media_id}")
 @app.get("/images/{post_id}/{media_id}")
 async def media_redirect(post_id: str, media_id: str):
-    post = cache.get(post_id)
+    post = post_cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
         if post:
-            cache[post_id] = msgspec.json.encode(post)
+            post_cache.set(post_id, msgspec.json.encode(post))
     else:
         post = msgspec.json.decode(post, type=Post)
 
@@ -105,11 +105,11 @@ async def grid(post_id: str):
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
         return FileResponse(f"cache/grid/{post_id}.jpeg", media_type="image/jpeg")
 
-    post = cache.get(post_id)
+    post = post_cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
         if post:
-            cache[post_id] = msgspec.json.encode(post)
+            post_cache.set(post_id, msgspec.json.encode(post))
     else:
         post = msgspec.json.decode(post, type=Post)
 
