@@ -39,6 +39,10 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
         post = await get_embed(post_id)
         cache[post_id] = msgspec.json.encode(post)
 
+    # Return to original post if no post found
+    if not post:
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
+
     jinja_ctx = {
         "theme_color": "#0084ff",
         "twitter_title": post.username,
@@ -71,6 +75,10 @@ async def media_redirect(post_id: str, media_id: str):
     else:
         post = msgspec.json.decode(post, type=Post)
 
+    # Return to original post if no post found
+    if not post:
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
+
     media = post.medias[int(media_id) - 1]
     return RedirectResponse(media.url)
 
@@ -86,6 +94,10 @@ async def grid(post_id: str):
         cache[post_id] = msgspec.json.encode(post)
     else:
         post = msgspec.json.decode(post, type=Post)
+
+    # Return to original post if no post found
+    if not post:
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
 
     images = []
     async with aiohttp.ClientSession() as session:
