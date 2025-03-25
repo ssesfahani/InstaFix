@@ -1,11 +1,12 @@
 import os
 from io import BytesIO
-from typing import Union
 
 import aiohttp
+import aiohttp.web_request
 import msgspec
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from loguru import logger
 from PIL import Image
 
 from cache import post_cache
@@ -13,17 +14,16 @@ from internal.grid_layout import generate_grid
 from scrapers.data import Post
 from scrapers.embed import get_embed
 from scrapers.share import resolve_share_id
-from loguru import logger
 
 env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
 embed_template = env.get_template("embed.html")
 
 
-async def home(request):
+async def home(request: aiohttp.web_request.Request):
     return web.Response(text="Hello, world")
 
 
-async def embed(request):
+async def embed(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     if post_id[0] == "B":
         resolve_id = await resolve_share_id(post_id)
@@ -64,10 +64,12 @@ async def embed(request):
     else:
         jinja_ctx["image_url"] = f"/images/{post.post_id}/1"
 
-    return web.Response(body=embed_template.render(**jinja_ctx).encode(), content_type="text/html")
+    return web.Response(
+        body=embed_template.render(**jinja_ctx).encode(), content_type="text/html"
+    )
 
 
-async def media_redirect(request):
+async def media_redirect(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     media_id = request.match_info.get("media_id", "")
     post = post_cache.get(post_id)
@@ -89,7 +91,7 @@ async def media_redirect(request):
     raise web.HTTPFound(media.url)
 
 
-async def grid(request):
+async def grid(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
@@ -144,7 +146,6 @@ if __name__ == "__main__":
             web.get("/images/{post_id}/{media_id}", media_redirect),
             web.get("/videos/{post_id}/{media_id}", media_redirect),
             web.get("/grid/{post_id}", grid),
-
             web.get("/p/{post_id}/", embed),
             web.get("/p/{post_id}/{media_num}/", embed),
             web.get("/{username}/p/{post_id}/", embed),
