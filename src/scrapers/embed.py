@@ -3,13 +3,15 @@ import json
 import aiohttp
 from selectolax.parser import HTMLParser
 
-from src.internal.jslex import JsLexer
-from src.scrapers.data import Media, Post, proxy_limit
+from internal.jslex import JsLexer
+from scrapers.data import Media, Post, proxy_limit
 
 
 async def get_embed(post_id: str) -> Post | None:
     async with proxy_limit:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=5)
+        ) as session:
             async with session.get(
                 f"https://www.instagram.com/p/{post_id}/embed/captioned/"
             ) as response:

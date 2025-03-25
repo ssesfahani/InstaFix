@@ -4,43 +4,33 @@ from typing import Union
 
 import aiohttp
 import msgspec
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from aiohttp import web
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from PIL import Image
 
-from src.cache import post_cache
-from src.internal.grid_layout import generate_grid
-from src.scrapers.data import Post
-from src.scrapers.embed import get_embed
-from src.scrapers.share import resolve_share_id
+from cache import post_cache
+from internal.grid_layout import generate_grid
+from scrapers.data import Post
+from scrapers.embed import get_embed
+from scrapers.share import resolve_share_id
 
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-
-
-@app.get("/")
-async def home():
-    return "Henlo!"
+env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
+embed_template = env.get_template("embed.html")
 
 
-@app.get("/tv/{post_id}")
-@app.get("/reel/{post_id}")
-@app.get("/reels/{post_id}")
-@app.get("/stories/{username}/{post_id}")
-@app.get("/p/{post_id}")
-@app.get("/p/{post_id}/{media_num}")
-@app.get("/{username}/p/{post_id}")
-@app.get("/{username}/p/{post_id}/{media_num}")
-@app.get("/{username}/reel/{post_id}")
-async def embed(request: Request, post_id: str, media_num: Union[str, None] = None):
+async def home(request):
+    return web.Response(text="Hello, world")
+
+
+async def embed(request):
+    post_id = request.match_info.get("post_id", "")
     if post_id[0] == "B":
         resolve_id = await resolve_share_id(post_id)
         if resolve_id:
             post_id = resolve_id
         else:
-            return RedirectResponse(
-                f"https://www.instagram.com/p/{post_id}", status_code=302
+            raise web.HTTPFound(
+                f"https://www.instagram.com/p/{post_id}",
             )
 
     post = post_cache.get(post_id)
@@ -53,8 +43,8 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(
-            f"https://www.instagram.com/p/{post_id}", status_code=302
+        raise web.HTTPFound(
+            f"https://www.instagram.com/p/{post_id}",
         )
 
     jinja_ctx = {
@@ -72,16 +62,12 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
     else:
         jinja_ctx["image_url"] = f"/images/{post.post_id}/1"
 
-    return templates.TemplateResponse(
-        request=request,
-        name="embed.html",
-        context=jinja_ctx,
-    )
+    return web.Response(body=embed_template.render(**jinja_ctx).encode())
 
 
-@app.get("/videos/{post_id}/{media_id}")
-@app.get("/images/{post_id}/{media_id}")
-async def media_redirect(post_id: str, media_id: str):
+async def media_redirect(request):
+    post_id = request.match_info.get("post_id", "")
+    media_id = request.match_info.get("media_id", "")
     post = post_cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
@@ -92,18 +78,19 @@ async def media_redirect(post_id: str, media_id: str):
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(
-            f"https://www.instagram.com/p/{post_id}", status_code=302
+        raise web.HTTPFound(
+            f"https://www.instagram.com/p/{post_id}",
         )
 
     media = post.medias[int(media_id) - 1]
-    return RedirectResponse(media.url)
+    raise web.HTTPFound(media.url)
 
 
-@app.get("/grid/{post_id}")
-async def grid(post_id: str):
+async def grid(request):
+    post_id = request.match_info.get("post_id", "")
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
-        return FileResponse(f"cache/grid/{post_id}.jpeg", media_type="image/jpeg")
+        with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
+            return web.Response(body=f.read())
 
     post = post_cache.get(post_id)
     if post is None:
@@ -115,8 +102,8 @@ async def grid(post_id: str):
 
     # Return to original post if no post found
     if not post:
-        return RedirectResponse(
-            f"https://www.instagram.com/p/{post_id}", status_code=302
+        raise web.HTTPFound(
+            f"https://www.instagram.com/p/{post_id}",
         )
 
     images = []
@@ -132,4 +119,27 @@ async def grid(post_id: str):
         raise
 
     grid_img.save(f"cache/grid/{post_id}.jpeg", format="JPEG")
-    return FileResponse(f"cache/grid/{post_id}.jpeg", media_type="image/jpeg")
+    with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
+        return web.Response(body=f.read())
+
+
+if __name__ == "__main__":
+    app = web.Application()
+    app.add_routes(
+        [
+            web.get("/", home),
+            web.get("/p/{post_id}", embed),
+            web.get("/p/{post_id}/{media_num}", embed),
+            web.get("/{username}/p/{post_id}", embed),
+            web.get("/{username}/p/{post_id}/{media_num}", embed),
+            web.get("/{username}/reel/{post_id}", embed),
+            web.get("/tv/{post_id}", embed),
+            web.get("/reel/{post_id}", embed),
+            web.get("/reels/{post_id}", embed),
+            web.get("/stories/{username}/{post_id}", embed),
+            web.get("/images/{post_id}/{media_id}", media_redirect),
+            web.get("/videos/{post_id}/{media_id}", media_redirect),
+            web.get("/grid/{post_id}", grid),
+        ]
+    )
+    web.run_app(app)
