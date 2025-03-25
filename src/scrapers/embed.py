@@ -9,7 +9,7 @@ from src.scrapers.data import Media, Post, proxy_limit
 
 async def get_embed(post_id: str) -> Post | None:
     async with proxy_limit:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
             async with session.get(
                 f"https://www.instagram.com/p/{post_id}/embed/captioned/"
             ) as response:
@@ -17,7 +17,7 @@ async def get_embed(post_id: str) -> Post | None:
 
     medias = []
     tree = HTMLParser(html)
-    # ---- from timesliceimpl (mostly single image post) ----
+    # ---- from timesliceimpl ----
     for script in tree.css("script"):
         script_text = script.text()
         if "shortcode_media" not in script_text:
@@ -46,7 +46,6 @@ async def get_embed(post_id: str) -> Post | None:
     if usernameFind := tree.css_first("span.UsernameText"):
         username = usernameFind.text()
     else:
-        print("username not found")
         return None
 
     caption = ""
@@ -62,7 +61,6 @@ async def get_embed(post_id: str) -> Post | None:
                 medias.append(Media(url=media_url, type="GraphImage"))
 
     if len(medias) == 0:
-        print("empty medias")
         return None
 
     return Post(
