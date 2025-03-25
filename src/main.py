@@ -33,11 +33,13 @@ async def home():
 @app.get("/{username}/p/{post_id}/{media_num}")
 @app.get("/{username}/reel/{post_id}")
 async def embed(request: Request, post_id: str, media_num: Union[str, None] = None):
-    if post_id in cache:
-        post = msgspec.json.decode(cache[post_id], type=Post)
-    else:
+    post = cache.get(post_id)
+    if post is None:
         post = await get_embed(post_id)
-        cache[post_id] = msgspec.json.encode(post)
+        if post:
+            cache[post_id] = msgspec.json.encode(post)
+    else:
+        post = msgspec.json.decode(post, type=Post)
 
     # Return to original post if no post found
     if not post:
@@ -71,7 +73,8 @@ async def media_redirect(post_id: str, media_id: str):
     post = cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
-        cache[post_id] = msgspec.json.encode(post)
+        if post:
+            cache[post_id] = msgspec.json.encode(post)
     else:
         post = msgspec.json.decode(post, type=Post)
 
@@ -91,7 +94,8 @@ async def grid(post_id: str):
     post = cache.get(post_id)
     if post is None:
         post = await get_embed(post_id)
-        cache[post_id] = msgspec.json.encode(post)
+        if post:
+            cache[post_id] = msgspec.json.encode(post)
     else:
         post = msgspec.json.decode(post, type=Post)
 
