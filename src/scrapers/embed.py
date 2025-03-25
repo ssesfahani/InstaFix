@@ -15,10 +15,6 @@ async def get_embed(post_id: str) -> Post | None:
             ) as response:
                 html = await response.text()
 
-        if limit.locked():
-            print("Concurrency limit reached, waiting ...")
-            await asyncio.sleep(1)
-
     medias = []
     tree = HTMLParser(html)
     # ---- from timesliceimpl (mostly single image post) ----
