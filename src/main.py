@@ -38,8 +38,8 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
     else:
         post = await get_embed(post_id)
         cache[post_id] = msgspec.json.encode(post)
-
-    if post.medias[0].type == "GraphImage":
+        
+    if post.medias[0].type == "GraphImage" and len(post.medias) > 2:
         embed_media = f"/grid/{post.post_id}/"
     elif post.medias[0].type == "GraphVideo":
         embed_media = f"/videos/{post.post_id}/1"
@@ -71,7 +71,7 @@ async def media_redirect(post_id: str, media_id: str):
     else:
         post = msgspec.json.decode(post, type=Post)
 
-    media = post.medias[int(media_id)]
+    media = post.medias[int(media_id)-1]
     return RedirectResponse(media.url)
 
 @app.get("/grid/{post_id}")
