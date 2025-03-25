@@ -32,9 +32,10 @@ async def get_embed(post_id: str) -> Post:
                 )
                 if shortcode_media:
                     post_medias = shortcode_media.get(
-                        "edge_sidecar_to_children", [shortcode_media]
-                    )
+                        "edge_sidecar_to_children", {}
+                    ).get("edges", [shortcode_media])
                     for media in post_medias:
+                        media = media.get("node", media)
                         if video_url := media.get("video_url"):
                             medias.append(Media(url=video_url, type="GraphVideo"))
                         elif media_url := media.get("display_url"):

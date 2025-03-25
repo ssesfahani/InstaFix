@@ -1,10 +1,15 @@
+from io import BytesIO
 from typing import Union
 
+import aiohttp
 import msgspec
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from PIL import Image
 
 from src.cache import cache
+from src.internal.grid_layout import generate_grid
 from src.scrapers.data import Post
 from src.scrapers.embed import get_embed
 
@@ -34,25 +39,62 @@ async def embed(request: Request, post_id: str, media_num: Union[str, None] = No
         post = await get_embed(post_id)
         cache[post_id] = msgspec.json.encode(post)
 
+    if post.medias[0].type == "GraphImage":
+        embed_media = f"/grid/{post.post_id}/"
+    elif post.medias[0].type == "GraphVideo":
+        embed_media = f"/videos/{post.post_id}/1"
+    else:
+        embed_media = f"/images/{post.post_id}/1"
+
     return templates.TemplateResponse(
         request=request,
         name="embed.html",
         context={
             "theme_color": "#0084ff",
             "twitter_title": post.username,
-            "twitter_image": post.medias[0].url,
+            "twitter_image": embed_media,
             "og_site_name": "InstaFix",
             "og_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
             "og_description": post.caption,
-            "og_image": post.medias[0].url,
+            "og_image": embed_media,
             "redirect_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
         },
     )
 
-@app.get("/images/{post_id}/{image_id}")
-async def image(post_id: str, image_id: str):
-    return "Image"
+@app.get("/videos/{post_id}/{media_id}")
+@app.get("/images/{post_id}/{media_id}")
+async def media_redirect(post_id: str, media_id: str):
+    post = cache.get(post_id)
+    if post is None:
+        post = await get_embed(post_id)
+        cache[post_id] = msgspec.json.encode(post)
+    else:
+        post = msgspec.json.decode(post, type=Post)
 
-@app.get("/videos/{post_id}/{video_id}")
-async def video(post_id: str, video_id: str):
-    return "Video"
+    media = post.medias[int(media_id)]
+    return RedirectResponse(media.url)
+
+@app.get("/grid/{post_id}")
+async def grid(post_id: str):
+    post = cache.get(post_id)
+    if post is None:
+        post = await get_embed(post_id)
+        cache[post_id] = msgspec.json.encode(post)
+    else:
+        post = msgspec.json.decode(post, type=Post)
+
+    images = []
+    async with aiohttp.ClientSession() as session:
+        for media in post.medias:
+            if media.type != "GraphImage":
+                continue
+            async with session.get(media.url) as response:
+                images.append(Image.open(BytesIO(await response.read())))
+
+    grid_img = generate_grid(images)
+    if grid_img is None:
+        raise
+
+    res = BytesIO()
+    grid_img.save(res, format="JPEG")
+    return Response(content=res.read(), media_type="image/jpeg")
