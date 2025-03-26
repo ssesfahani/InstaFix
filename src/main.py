@@ -25,6 +25,8 @@ async def home(request: aiohttp.web_request.Request):
 
 async def embed(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
+    media_num = int(request.match_info.get("media_num", 0))
+
     if post_id[0] == "B":
         resolve_id = await resolve_share_id(post_id)
         if resolve_id:
@@ -49,20 +51,23 @@ async def embed(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
+    ig_url = str(
+        request.url.with_host("www.instagram.com").with_port(None).with_scheme("https")
+    )
     jinja_ctx = {
         "theme_color": "#0084ff",
         "twitter_title": post.username,
         "og_site_name": "InstaFix",
-        "og_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
+        "og_url": ig_url,
         "og_description": post.caption,
-        "redirect_url": f"https://www.instagram.com/{post.username}/p/{post.post_id}",
+        "redirect_url": ig_url,
     }
-    if post.medias[0].type == "GraphImage" and len(post.medias) > 2:
+    if media_num == 0 and post.medias[0].type == "GraphImage" and len(post.medias) > 1:
         jinja_ctx["image_url"] = f"/grid/{post.post_id}/"
-    elif post.medias[0].type == "GraphVideo":
-        jinja_ctx["video_url"] = f"/videos/{post.post_id}/1"
+    elif post.medias[max(1, media_num) - 1].type == "GraphImage":
+        jinja_ctx["image_url"] = f"/images/{post.post_id}/{max(1, media_num)}"
     else:
-        jinja_ctx["image_url"] = f"/images/{post.post_id}/1"
+        jinja_ctx["video_url"] = f"/videos/{post.post_id}/{max(1, media_num)}"
 
     return web.Response(
         body=embed_template.render(**jinja_ctx).encode(), content_type="text/html"
