@@ -5,10 +5,10 @@ import aiohttp
 from scrapers.data import proxy_limit
 
 
-async def resolve_share_id(post_id: str) -> str | None:
+async def resolve_share_id(post_id: str, proxy: str = "") -> str | None:
     async with proxy_limit:
         async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=5)
+            timeout=aiohttp.ClientTimeout(total=5), proxy=proxy
         ) as session:
             async with session.head(
                 f"https://www.instagram.com/share/reel/{post_id}/"

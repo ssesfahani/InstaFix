@@ -4,6 +4,7 @@ from io import BytesIO
 import aiohttp
 import aiohttp.web_request
 import msgspec
+import tomli
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
@@ -14,6 +15,13 @@ from internal.grid_layout import generate_grid
 from scrapers.data import Post
 from scrapers.embed import get_embed
 from scrapers.share import resolve_share_id
+
+# config loader
+if os.path.exists("config.toml"):
+    with open("config.toml", "rb") as f:
+        config = tomli.load(f)
+else:
+    config = {}
 
 env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
 embed_template = env.get_template("embed.html")
@@ -28,7 +36,7 @@ async def embed(request: aiohttp.web_request.Request):
     media_num = int(request.match_info.get("media_num", 0))
 
     if post_id[0] == "B":
-        resolve_id = await resolve_share_id(post_id)
+        resolve_id = await resolve_share_id(post_id, config.get("HTTP_PROXY", ""))
         if resolve_id:
             post_id = resolve_id
         else:
@@ -38,7 +46,7 @@ async def embed(request: aiohttp.web_request.Request):
 
     post = post_cache.get(post_id)
     if post is None:
-        post = await get_embed(post_id)
+        post = await get_embed(post_id, config.get("HTTP_PROXY", ""))
         if post:
             post_cache.set(post_id, msgspec.json.encode(post))
     else:

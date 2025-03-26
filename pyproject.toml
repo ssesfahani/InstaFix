@@ -12,4 +12,5 @@ dependencies = [
     "networkx>=3.4.2",
     "pillow>=11.1.0",
     "selectolax[cython]>=0.3.28",
+    "tomli>=2.2.1",
 ]
