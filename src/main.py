@@ -3,17 +3,14 @@ from io import BytesIO
 
 import aiohttp
 import aiohttp.web_request
-import msgspec
 import tomli
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
 from PIL import Image
 
-from cache import post_cache
 from internal.grid_layout import generate_grid
-from scrapers.data import Post
-from scrapers.embed import get_embed
+from scrapers import get_post
 from scrapers.share import resolve_share_id
 
 # config loader
@@ -44,14 +41,7 @@ async def embed(request: aiohttp.web_request.Request):
                 f"https://www.instagram.com/p/{post_id}",
             )
 
-    post = post_cache.get(post_id)
-    if post is None:
-        post = await get_embed(post_id, config.get("HTTP_PROXY", ""))
-        if post:
-            post_cache.set(post_id, msgspec.json.encode(post))
-    else:
-        post = msgspec.json.decode(post, type=Post)
-
+    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
     logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
@@ -85,13 +75,7 @@ async def embed(request: aiohttp.web_request.Request):
 async def media_redirect(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     media_id = request.match_info.get("media_id", "")
-    post = post_cache.get(post_id)
-    if post is None:
-        post = await get_embed(post_id)
-        if post:
-            post_cache.set(post_id, msgspec.json.encode(post))
-    else:
-        post = msgspec.json.decode(post, type=Post)
+    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
 
     logger.debug(f"media_redirect({post_id})")
     # Return to original post if no post found
@@ -101,7 +85,7 @@ async def media_redirect(request: aiohttp.web_request.Request):
         )
 
     media = post.medias[int(media_id) - 1]
-    raise web.HTTPFound(media.url)
+    return web.Response(status=307, headers={"Location": media.url})
 
 
 async def grid(request: aiohttp.web_request.Request):
@@ -110,14 +94,7 @@ async def grid(request: aiohttp.web_request.Request):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
             return web.Response(body=f.read(), content_type="image/jpeg")
 
-    post = post_cache.get(post_id)
-    if post is None:
-        post = await get_embed(post_id)
-        if post:
-            post_cache.set(post_id, msgspec.json.encode(post))
-    else:
-        post = msgspec.json.decode(post, type=Post)
-
+    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
     logger.debug(f"grid({post_id})")
     # Return to original post if no post found
     if not post:
