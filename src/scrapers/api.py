@@ -1,5 +1,7 @@
-import aiohttp
 import json
+import time
+
+import aiohttp
 
 from scrapers.data import Media, Post, proxy_limit
 
@@ -11,12 +13,14 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         "server_timestamps": "true",
         "doc_id": "8845758582119845",
     }
-    data["variables"] = json.dumps({
-        "shortcode": post_id,
-        "fetch_tagged_user_count": None,
-        "hoisted_comment_id": None,
-        "hoisted_reply_id": None,
-    })
+    data["variables"] = json.dumps(
+        {
+            "shortcode": post_id,
+            "fetch_tagged_user_count": None,
+            "hoisted_comment_id": None,
+            "hoisted_reply_id": None,
+        }
+    )
 
     async with proxy_limit:
         async with aiohttp.ClientSession(
@@ -54,8 +58,10 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         .get("text")
     )
     return Post(
+        timestamp=int(time.time()),
         post_id=post_id,
         username=username,
         caption=caption,
         medias=medias,
+        blocked=False,
     )

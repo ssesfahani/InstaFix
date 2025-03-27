@@ -1,4 +1,5 @@
 import json
+import time
 
 import aiohttp
 from selectolax.parser import HTMLParser
@@ -66,8 +67,10 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         return None
 
     return Post(
+        timestamp=int(time.time()),
         post_id=post_id,
         username=username,
         caption=caption,
         medias=medias,
+        blocked="WatchOnInstagram" in html,
     )

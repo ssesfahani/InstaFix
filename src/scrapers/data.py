@@ -12,7 +12,9 @@ class Media(msgspec.Struct):
 
 
 class Post(msgspec.Struct):
+    timestamp: int
     post_id: str
     username: str
     caption: str
     medias: List[Media]
+    blocked: bool

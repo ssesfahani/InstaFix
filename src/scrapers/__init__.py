@@ -12,7 +12,7 @@ async def get_post(post_id: str, proxy: str = "") -> Post | None:
         return msgspec.json.decode(post, type=Post)
 
     post = await get_embed(post_id, proxy)
-    if not post:
+    if not post or post.blocked:
         post = await get_query_api(post_id, proxy)
     if post:
         post_cache.set(post_id, msgspec.json.encode(post))
