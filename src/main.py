@@ -120,6 +120,12 @@ async def grid(request: aiohttp.web_request.Request):
 
 
 if __name__ == "__main__":
+    import asyncio
+
+    import uvloop
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
     app = web.Application()
     app.add_routes(
         [

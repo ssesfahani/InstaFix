@@ -13,4 +13,5 @@ dependencies = [
     "pillow>=11.1.0",
     "selectolax[cython]>=0.3.28",
     "tomli>=2.2.1",
+    "uvloop>=0.21.0",
 ]
