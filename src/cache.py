@@ -57,3 +57,4 @@ if os.path.exists("cache") is False:
     os.makedirs("cache")
     os.makedirs("cache/grid")
 post_cache = SQLiteCache(db_path="cache/post_data.db", ttl=24 * 60 * 60)
+shareid_cache = SQLiteCache(db_path="cache/shareid_data.db", ttl=365 * 24 * 60 * 60)
