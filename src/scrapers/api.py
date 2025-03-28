@@ -51,12 +51,10 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
             medias.append(Media(url=media_url, type="GraphImage"))
 
     username = shortcode_media.get("owner", {}).get("username")
-    caption = (
-        shortcode_media.get("edge_media_to_caption", {})
-        .get("edges", [{}])[0]
-        .get("node", {})
-        .get("text")
-    )
+    caption = ""
+    caption_edges = shortcode_media.get("edge_media_to_caption", {}).get("edges", [])
+    if len(caption_edges) > 0:
+        caption = caption_edges[0].get("node", {}).get("text", "")
     return Post(
         timestamp=int(time.time()),
         post_id=post_id,
