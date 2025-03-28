@@ -7,8 +7,8 @@ from scrapers.data import proxy_limit
 
 
 async def resolve_share_id(post_id: str, proxy: str = "") -> str | None:
-    if shareid_cache.get(post_id):
-        return shareid_cache.get(post_id)
+    if cached := shareid_cache.get(post_id):
+        return cached
     async with proxy_limit:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=5), proxy=proxy
@@ -20,4 +20,7 @@ async def resolve_share_id(post_id: str, proxy: str = "") -> str | None:
                 if "/login" in location:
                     return None
                 parts = urllib.parse.urlparse(location)
-                return parts.path.strip("/").split("/")[-1]
+
+                new_post_id = parts.path.strip("/").split("/")[-1]
+                shareid_cache.set(post_id, new_post_id)
+                return new_post_id
