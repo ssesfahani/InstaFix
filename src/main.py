@@ -3,22 +3,15 @@ from io import BytesIO
 
 import aiohttp
 import aiohttp.web_request
-import tomli
 from aiohttp import web
 from loguru import logger
 from PIL import Image
 
+from config import config
 from internal.grid_layout import generate_grid
 from scrapers import get_post
 from scrapers.share import resolve_share_id
 from templates.embed import render_embed
-
-# config loader
-if os.path.exists("config.toml"):
-    with open("config.toml", "rb") as f:
-        config = tomli.load(f)
-else:
-    config = {}
 
 
 async def home(request: aiohttp.web_request.Request):
@@ -30,7 +23,7 @@ async def embed(request: aiohttp.web_request.Request):
     media_num = int(request.match_info.get("media_num", 0))
 
     if post_id[0] == "B":
-        resolve_id = await resolve_share_id(post_id, config.get("HTTP_PROXY", ""))
+        resolve_id = await resolve_share_id(post_id)
         if resolve_id:
             post_id = resolve_id
         else:
@@ -38,7 +31,7 @@ async def embed(request: aiohttp.web_request.Request):
                 f"https://www.instagram.com/p/{post_id}",
             )
 
-    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
+    post = await get_post(post_id)
     # logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
@@ -72,7 +65,7 @@ async def embed(request: aiohttp.web_request.Request):
 async def media_redirect(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     media_id = request.match_info.get("media_id", "")
-    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
+    post = await get_post(post_id)
 
     logger.debug(f"media_redirect({post_id})")
     # Return to original post if no post found
@@ -91,7 +84,7 @@ async def grid(request: aiohttp.web_request.Request):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
             return web.Response(body=f.read(), content_type="image/jpeg")
 
-    post = await get_post(post_id, config.get("HTTP_PROXY", ""))
+    post = await get_post(post_id)
     logger.debug(f"grid({post_id})")
     # Return to original post if no post found
     if not post:

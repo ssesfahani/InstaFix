@@ -3,7 +3,7 @@ import time
 
 import aiohttp
 
-from scrapers.data import Media, Post, proxy_limit
+from scrapers.data import HTTPSession, Media, Post
 
 
 async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
@@ -22,15 +22,11 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         }
     )
 
-    async with proxy_limit:
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=5), proxy=proxy
-        ) as session:
-            async with session.post(
-                "https://www.instagram.com/graphql/query",
-                data=data,
-            ) as response:
-                query_json = await response.json()
+    async with HTTPSession() as session:
+        text = await session.http_post(
+            "https://www.instagram.com/graphql/query", data=data
+        )
+        query_json = json.loads(text)
 
     data = query_json.get("data")
     if not data:

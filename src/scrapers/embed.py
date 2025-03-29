@@ -1,22 +1,17 @@
 import json
 import time
 
-import aiohttp
 from selectolax.parser import HTMLParser
 
 from internal.jslex import JsLexer
-from scrapers.data import Media, Post, proxy_limit
+from scrapers.data import HTTPSession, Media, Post
 
 
 async def get_embed(post_id: str, proxy: str = "") -> Post | None:
-    async with proxy_limit:
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=5), proxy=proxy
-        ) as session:
-            async with session.get(
-                f"https://www.instagram.com/p/{post_id}/embed/captioned/"
-            ) as response:
-                html = await response.text()
+    async with HTTPSession() as session:
+        html = await session.http_get(
+            f"https://www.instagram.com/p/{post_id}/embed/captioned/",
+        )
 
     medias = []
     tree = HTMLParser(html)
