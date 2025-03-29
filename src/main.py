@@ -5,13 +5,13 @@ import aiohttp
 import aiohttp.web_request
 import tomli
 from aiohttp import web
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
 from PIL import Image
 
 from internal.grid_layout import generate_grid
 from scrapers import get_post
 from scrapers.share import resolve_share_id
+from templates.embed import render_embed
 
 # config loader
 if os.path.exists("config.toml"):
@@ -19,9 +19,6 @@ if os.path.exists("config.toml"):
         config = tomli.load(f)
 else:
     config = {}
-
-env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
-embed_template = env.get_template("embed.html")
 
 
 async def home(request: aiohttp.web_request.Request):
@@ -42,7 +39,7 @@ async def embed(request: aiohttp.web_request.Request):
             )
 
     post = await get_post(post_id, config.get("HTTP_PROXY", ""))
-    logger.debug(f"embed({post_id})")
+    # logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
@@ -68,7 +65,7 @@ async def embed(request: aiohttp.web_request.Request):
         jinja_ctx["video_url"] = f"/videos/{post.post_id}/{max(1, media_num)}"
 
     return web.Response(
-        body=embed_template.render(**jinja_ctx).encode(), content_type="text/html"
+        body=render_embed(**jinja_ctx).encode(), content_type="text/html"
     )
 
 
