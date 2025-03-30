@@ -1,22 +1,16 @@
-def js_lexer_string(js: str):
-    idx = 0
-    len_js = len(js)
-    while idx < len_js:
-        idx = js.find('"', idx)
-        if idx == -1:
-            break
-        current_char = js[idx]
-        start_char = current_char
-        start_idx = idx
+import re
 
-        idx += 1  # Move past the opening quote
-        while idx < len_js:
-            idx = js.find('"', idx)
-            if idx == -1:
-                break
-            elif js[idx-1] == "\\":
-                idx += 1
-            elif js[idx] == start_char:
-                idx += 1  # Move past the closing quote
-                yield (start_idx, idx)
-                break
+# Pre-compile the optimized regex (genned from Gemini 2.5)
+# Regex breakdown:
+# "          - Match the opening double quote
+# [^"\\]*    - Match 0 or more characters that are NOT a quote or backslash (greedily)
+# (?:        - Start a non-capturing group (for escapes and subsequent normal chars)
+#   \\.      - Match an escaped character (backslash followed by ANY character)
+#   [^"\\]*  - Match 0 or more non-quote, non-backslash characters following the escape
+# )*         - Repeat this group 0 or more times
+# "          - Match the closing double quote
+JS_STRING_REGEX = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"')
+
+def js_lexer_string(js: str):
+    for match in JS_STRING_REGEX.finditer(js):
+        yield (match.start(), match.end())
