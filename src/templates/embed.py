@@ -20,6 +20,7 @@ def render_embed(
 
         <link rel="canonical" href="{og_url}" />
         <meta property="og:url" content="{og_url}"/>
+        <meta http-equiv="refresh" content="0; url={og_url}" />
 
         <meta property="og:title" content="{twitter_title}"/>
         <meta property="twitter:title" content="{twitter_title}"/>
