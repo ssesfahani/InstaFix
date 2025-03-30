@@ -3,7 +3,7 @@ def js_lexer_string(js: str):
     len_js = len(js)
     while idx < len_js:
         c = js[idx]
-        if c in "\"'`":  # Added support for template literals with backtick
+        if c == "'" or c == '"':
             start_char = c
             start_idx = idx
             idx += 1  # Move past the opening quote
