@@ -3,7 +3,7 @@ import time
 
 from selectolax.parser import HTMLParser
 
-from internal.jslex import JsLexer
+from internal.jslex import js_lexer_string
 from scrapers.data import HTTPSession, Media, Post
 
 
@@ -21,9 +21,9 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         if "shortcode_media" not in script_text:
             continue
 
-        lexer = JsLexer()
-        for name, tok in lexer.lex(script_text):
-            if name == "string" and "shortcode_media" in tok:
+        for start_idx, end_idx in js_lexer_string(script_text):
+            tok = script_text[start_idx:end_idx]
+            if "shortcode_media" in tok:
                 shortcode_media = (
                     json.loads(json.loads(tok))
                     .get("gql_data", {})
