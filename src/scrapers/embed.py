@@ -51,7 +51,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
 
     caption = ""
     if captionFind := tree.css_first("div.Caption"):
-        caption = captionFind.text(deep=False)
+        caption = captionFind.text(deep=False, separator="\n").strip()
 
     # Find media
     if len(medias) == 0:
