@@ -1,4 +1,5 @@
 import os
+import re
 from io import BytesIO
 
 import aiohttp
@@ -19,6 +20,15 @@ async def home(request: aiohttp.web_request.Request):
 
 
 async def embed(request: aiohttp.web_request.Request):
+    ig_url = str(
+        request.url.with_host("www.instagram.com").with_port(None).with_scheme("https")
+    )
+    if not re.search(
+        r"(discordbot|telegrambot|facebook|whatsapp|firefox\/92|vkshare|revoltchat|preview|iframely)",
+        request.headers.get("User-Agent", "").lower(),
+    ):
+        return web.Response(status=307, headers={"Location": ig_url})
+
     post_id = request.match_info.get("post_id", "")
     media_num = int(request.match_info.get("media_num", 0))
 
@@ -39,9 +49,6 @@ async def embed(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
-    ig_url = str(
-        request.url.with_host("www.instagram.com").with_port(None).with_scheme("https")
-    )
     jinja_ctx = {
         "theme_color": "#0084ff",
         "twitter_title": post.username,
