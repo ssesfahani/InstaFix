@@ -1,5 +1,7 @@
 import os
 import re
+import threading
+import time
 from io import BytesIO
 
 import aiohttp
@@ -116,10 +118,49 @@ async def grid(request: aiohttp.web_request.Request):
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 
+# --- schedule tasks ---
+def run_continuously(interval=1):
+    """Continuously run, while executing pending jobs at each
+    elapsed time interval.
+    @return cease_continuous_run: threading. Event which can
+    be set to cease continuous run. Please note that it is
+    *intended behavior that run_continuously() does not run
+    missed jobs*. For example, if you've registered a job that
+    should run every minute and you set a continuous run
+    interval of one hour then your job won't be run 60 times
+    at each interval but only once.
+    """
+    cease_continuous_run = threading.Event()
+
+    class ScheduleThread(threading.Thread):
+        @classmethod
+        def run(cls):
+            while not cease_continuous_run.is_set():
+                schedule.run_pending()
+                time.sleep(interval)
+
+    continuous_thread = ScheduleThread()
+    continuous_thread.start()
+    return cease_continuous_run
+
+
+def remove_grid_cache(max_size: int = 10 * 1024 * 1024 * 1024):  # 10 gigs
+    current_size = 0
+    for file in os.listdir("cache/grid"):
+        current_size += os.path.getsize(f"cache/grid/{file}")
+        if current_size > max_size:
+            os.remove(f"cache/grid/{file}")
+
+
 if __name__ == "__main__":
     import asyncio
 
+    import schedule
     import uvloop
+
+    # --- schedule tasks ---
+    cease_continuous_run = run_continuously(interval=10)
+    schedule.every(10).minutes.do(remove_grid_cache)
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 

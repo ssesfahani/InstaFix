@@ -428,6 +428,7 @@ dependencies = [
     { name = "msgspec" },
     { name = "networkx" },
     { name = "pillow" },
+    { name = "schedule" },
     { name = "selectolax", extra = ["cython"] },
     { name = "tomli" },
     { name = "uvloop" },
@@ -440,6 +441,7 @@ requires-dist = [
     { name = "msgspec", specifier = ">=0.19.0" },
     { name = "networkx", specifier = ">=3.4.2" },
     { name = "pillow", specifier = ">=11.1.0" },
+    { name = "schedule", specifier = ">=1.2.2" },
     { name = "selectolax", extras = ["cython"], specifier = ">=0.3.28" },
     { name = "tomli", specifier = ">=2.2.1" },
     { name = "uvloop", specifier = ">=0.21.0" },
@@ -812,6 +814,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1d/b2/31537cf4b1ca988837256c910a668b553fceb8f069bedc4b1c826024b52c/pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6", size = 172736 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/a3/a812df4e2dd5696d1f351d58b8fe16a405b234ad2886a0dab9183fb78109/pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc", size = 117552 },
+]
+
+[[package]]
+name = "schedule"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/91/b525790063015759f34447d4cf9d2ccb52cdee0f1dd6ff8764e863bcb74c/schedule-1.2.2.tar.gz", hash = "sha256:15fe9c75fe5fd9b9627f3f19cc0ef1420508f9f9a46f45cd0769ef75ede5f0b7", size = 26452 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/a7/84c96b61fd13205f2cafbe263cdb2745965974bdf3e0078f121dfeca5f02/schedule-1.2.2-py3-none-any.whl", hash = "sha256:5bef4a2a0183abf44046ae0d164cadcac21b1db011bdd8102e4a0c1e91e06a7d", size = 12220 },
 ]
 
 [[package]]
