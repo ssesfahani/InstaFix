@@ -11,6 +11,6 @@ import re
 # "          - Match the closing double quote
 JS_STRING_REGEX = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"')
 
+
 def js_lexer_string(js: str):
-    for match in JS_STRING_REGEX.finditer(js):
-        yield (match.start(), match.end())
+    return JS_STRING_REGEX.findall(js)
