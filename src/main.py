@@ -2,14 +2,13 @@ import os
 import re
 import threading
 import time
-from io import BytesIO
 
 import aiohttp
 import aiohttp.web_request
 from aiohttp import web
 from loguru import logger
-from PIL import Image
 
+from cache import post_cache
 from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
@@ -163,6 +162,7 @@ if __name__ == "__main__":
     # --- schedule tasks ---
     cease_continuous_run = run_continuously(interval=10)
     schedule.every(10).minutes.do(remove_grid_cache)
+    schedule.every(1).minutes.do(post_cache.evict)
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
