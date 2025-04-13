@@ -11,7 +11,8 @@ from loguru import logger
 from PIL import Image
 
 from config import config
-from internal.grid_layout import generate_grid
+from internal.grid_layout import grid_from_urls
+from internal.singleflight import Singleflight
 from scrapers import get_post
 from scrapers.share import resolve_share_id
 from templates.embed import render_embed
@@ -87,6 +88,9 @@ async def media_redirect(request: aiohttp.web_request.Request):
     return web.Response(status=307, headers={"Location": media.url})
 
 
+grid_sf = Singleflight[str, str | None]()
+
+
 async def grid(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
@@ -94,7 +98,6 @@ async def grid(request: aiohttp.web_request.Request):
             return web.Response(body=f.read(), content_type="image/jpeg")
 
     post = await get_post(post_id)
-    logger.debug(f"grid({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
@@ -104,17 +107,16 @@ async def grid(request: aiohttp.web_request.Request):
     images = []
     async with aiohttp.ClientSession() as session:
         for media in post.medias:
-            if media.type != "GraphImage":
-                continue
-            async with session.get(media.url) as response:
-                images.append(Image.open(BytesIO(await response.read())))
+            if media.type == "GraphImage":
+                images.append(media.url)
 
-    grid_img = generate_grid(images)
-    if grid_img is None:
+    grid_fname = await grid_sf.do(
+        post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg"
+    )
+    if grid_fname is None:
         raise
 
-    grid_img.save(f"cache/grid/{post_id}.jpeg", format="JPEG")
-    with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
+    with open(grid_fname, "rb") as f:
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 

@@ -1,3 +1,7 @@
+from io import BytesIO
+from typing import List, Optional
+
+import aiohttp
 import networkx as nx
 from PIL import Image
 
@@ -24,7 +28,7 @@ def create_graph(images_wh, start, canvas_width):
     return results
 
 
-def generate_grid(images):
+def generate_grid(images: List[Image.Image], out_fname: str) -> Optional[str]:
     """Generate a grid image based on the best row layout."""
     images_wh = [(img.width, img.height) for img in images] + [(0, 0)]
     canvas_width = int(sum(w for w, _ in images_wh) / len(images_wh) * 1.5)
@@ -62,4 +66,15 @@ def generate_grid(images):
 
         y_offset += row_height
 
-    return canvas
+    canvas.save(out_fname)
+    return out_fname
+
+
+async def grid_from_urls(urls: List[str], out_fname: str) -> Optional[str]:
+    """Generate a grid image based on the best row layout."""
+    images = []
+    async with aiohttp.ClientSession() as session:
+        for url in urls:
+            async with session.get(url) as response:
+                images.append(Image.open(BytesIO(await response.read())))
+    return generate_grid(images, out_fname)
