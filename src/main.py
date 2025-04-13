@@ -66,6 +66,19 @@ async def embed(request: aiohttp.web_request.Request):
     else:
         jinja_ctx["video_url"] = f"/videos/{post.post_id}/{max(1, media_num)}"
 
+    # direct = redirect to media url
+    if request.query.get("direct"):
+        return web.Response(
+            status=307,
+            headers={
+                "Location": jinja_ctx.get("image_url", jinja_ctx.get("video_url", ""))
+            },
+        )
+
+    # gallery = no caption
+    if request.query.get("gallery"):
+        jinja_ctx.pop('og_description', None)
+
     return web.Response(
         body=render_embed(**jinja_ctx).encode(), content_type="text/html"
     )

@@ -6,7 +6,7 @@ def render_embed(
     og_url,
     twitter_title,
     og_site_name,
-    og_description,
+    og_description=None,
     image_url=None,
     video_url=None,
     redirect_url=None,
@@ -25,6 +25,10 @@ def render_embed(
         <meta property="og:title" content="{twitter_title}"/>
         <meta property="twitter:title" content="{twitter_title}"/>
         <meta property="og:site_name" content="{og_site_name}"/>
+    """
+
+    if og_description:
+        html += f"""
         <meta property="og:description" content="{escape_html(og_description)}"/>
     """
 
