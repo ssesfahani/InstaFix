@@ -11,7 +11,7 @@ async def resolve_share_id(post_id: str, proxy: str = "") -> str | None:
         return cached
     async with HTTPSession() as session:
         location = await session.http_redirect(
-            f"https://www.instagram.com/share/reel/{post_id}/"
+            f"https://www.instagram.com/share/p/{post_id}/"
         )
         if "/login" in location:
             return None
