@@ -56,6 +56,8 @@ class HTTPSession:
 
     async def http_redirect(self, url: str) -> str:
         async with proxy_limit:
-            async with self._session.request("HEAD", url, allow_redirects=False) as response:
+            async with self._session.request(
+                "HEAD", url, allow_redirects=False
+            ) as response:
                 response.raise_for_status()
                 return response.headers.get("location", "")

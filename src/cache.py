@@ -5,7 +5,7 @@ import time
 
 class SQLiteCache:
     def __init__(self, db_path="cache.db", ttl=300):
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         self.ttl = ttl
         self._create_table()

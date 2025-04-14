@@ -1,6 +1,6 @@
+import multiprocessing
 import os
 import re
-import threading
 import time
 
 import aiohttp
@@ -8,7 +8,7 @@ import aiohttp.web_request
 from aiohttp import web
 from loguru import logger
 
-from cache import post_cache
+from cache import SQLiteCache, post_cache
 from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
@@ -77,7 +77,7 @@ async def embed(request: aiohttp.web_request.Request):
 
     # gallery = no caption
     if request.query.get("gallery"):
-        jinja_ctx.pop('og_description', None)
+        jinja_ctx.pop("og_description", None)
 
     return web.Response(
         body=render_embed(**jinja_ctx).encode(), content_type="text/html"
@@ -133,31 +133,6 @@ async def grid(request: aiohttp.web_request.Request):
 
 
 # --- schedule tasks ---
-def run_continuously(interval=1):
-    """Continuously run, while executing pending jobs at each
-    elapsed time interval.
-    @return cease_continuous_run: threading. Event which can
-    be set to cease continuous run. Please note that it is
-    *intended behavior that run_continuously() does not run
-    missed jobs*. For example, if you've registered a job that
-    should run every minute and you set a continuous run
-    interval of one hour then your job won't be run 60 times
-    at each interval but only once.
-    """
-    cease_continuous_run = threading.Event()
-
-    class ScheduleThread(threading.Thread):
-        @classmethod
-        def run(cls):
-            while not cease_continuous_run.is_set():
-                schedule.run_pending()
-                time.sleep(interval)
-
-    continuous_thread = ScheduleThread()
-    continuous_thread.start()
-    return cease_continuous_run
-
-
 def remove_grid_cache(max_size: int = 10 * 1024 * 1024 * 1024):  # 10 gigs
     current_size = 0
     for file in os.listdir("cache/grid"):
@@ -166,16 +141,25 @@ def remove_grid_cache(max_size: int = 10 * 1024 * 1024 * 1024):  # 10 gigs
             os.remove(f"cache/grid/{file}")
 
 
+def schedule_worker(sqlite_cache: SQLiteCache):
+    interval = 60
+    while True:
+        remove_grid_cache()
+        sqlite_cache.evict()
+        time.sleep(interval)
+
+
 if __name__ == "__main__":
     import asyncio
 
-    import schedule
     import uvloop
 
     # --- schedule tasks ---
-    cease_continuous_run = run_continuously(interval=10)
-    schedule.every(10).minutes.do(remove_grid_cache)
-    schedule.every(1).minutes.do(post_cache.evict)
+    multiprocessing.set_start_method("fork")
+    continuous_process = multiprocessing.Process(
+        target=schedule_worker, args=(post_cache,)
+    )
+    continuous_process.start()
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
