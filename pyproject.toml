@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp[speedups]>=3.11.14",
+    "aiosqlite>=0.21.0",
     "loguru>=0.7.3",
     "networkx>=3.4.2",
     "pillow>=11.1.0",

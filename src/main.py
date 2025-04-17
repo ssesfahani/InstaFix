@@ -1,14 +1,12 @@
-import multiprocessing
 import os
 import re
-import time
 
 import aiohttp
 import aiohttp.web_request
 from aiohttp import web
 from loguru import logger
 
-from cache import SQLiteCache, post_cache
+from cache import post_cache, shareid_cache
 from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
@@ -132,21 +130,9 @@ async def grid(request: aiohttp.web_request.Request):
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 
-# --- schedule tasks ---
-def remove_grid_cache(max_size: int = 10 * 1024 * 1024 * 1024):  # 10 gigs
-    current_size = 0
-    for file in os.listdir("cache/grid"):
-        current_size += os.path.getsize(f"cache/grid/{file}")
-        if current_size > max_size:
-            os.remove(f"cache/grid/{file}")
-
-
-def schedule_worker(sqlite_cache: SQLiteCache):
-    interval = 60
-    while True:
-        remove_grid_cache()
-        sqlite_cache.evict()
-        time.sleep(interval)
+async def init_cache():
+    await post_cache.init_cache()
+    await shareid_cache.init_cache()
 
 
 if __name__ == "__main__":
@@ -154,14 +140,8 @@ if __name__ == "__main__":
 
     import uvloop
 
-    # --- schedule tasks ---
-    multiprocessing.set_start_method("fork")
-    continuous_process = multiprocessing.Process(
-        target=schedule_worker, args=(post_cache,)
-    )
-    continuous_process.start()
-
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    asyncio.run(init_cache())
 
     app = web.Application()
     app.add_routes(
