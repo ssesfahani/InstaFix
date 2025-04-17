@@ -1,6 +1,7 @@
 import os
 import time
 
+import aiofiles.os
 import aiosqlite
 
 
@@ -40,7 +41,7 @@ class SQLiteCache:
         self._counter += 1
         if self._counter % 1000 == 0:
             await self.evict()
-            remove_grid_cache()
+            await remove_grid_cache()
             self._counter = 0
 
     async def get(self, key):
@@ -74,12 +75,12 @@ class SQLiteCache:
         await self.conn.commit()
 
 
-def remove_grid_cache(max_cache: int = 5_000):
+async def remove_grid_cache(max_cache: int = 5_000):
     current_cached = 0
     for file in os.listdir("cache/grid"):
         current_cached += 1
         if current_cached > max_cache:
-            os.remove(f"cache/grid/{file}")
+            await aiofiles.os.remove(f"cache/grid/{file}")
 
 
 if os.path.exists("cache") is False:
