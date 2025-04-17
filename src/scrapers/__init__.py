@@ -18,7 +18,7 @@ async def get_post(post_id: str, proxy: str = "") -> Post | None:
 
 
 async def _get_post(post_id: str, proxy: str = "") -> Post | None:
-    logger.debug(f"get_post({post_id})")
+    # logger.debug(f"get_post({post_id})")
 
     post = await get_embed(post_id, proxy)
     if not post or post.blocked:

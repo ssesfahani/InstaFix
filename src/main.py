@@ -89,7 +89,7 @@ async def media_redirect(request: aiohttp.web_request.Request):
     media_id = request.match_info.get("media_id", "")
     post = await get_post(post_id)
 
-    logger.debug(f"media_redirect({post_id})")
+    # logger.debug(f"media_redirect({post_id})")
     # Return to original post if no post found
     if not post:
         raise web.HTTPFound(
