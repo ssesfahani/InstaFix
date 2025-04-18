@@ -101,20 +101,20 @@ class HTTPSession:
 
     async def http_get(self, url: str) -> str:
         async with proxy_limit:
-            async with self._session.request("GET", url) as response:
+            async with self._session.request("GET", url, verify_ssl=False) as response:
                 response.raise_for_status()
                 return await response.text()
 
     async def http_post(self, url: str, data: dict) -> str:
         async with proxy_limit:
-            async with self._session.request("POST", url, data=data) as response:
+            async with self._session.request("POST", url, data=data, verify_ssl=False) as response:
                 response.raise_for_status()
                 return await response.text()
 
     async def http_redirect(self, url: str) -> str:
         async with proxy_limit:
             async with self._session.request(
-                "HEAD", url, allow_redirects=False
+                "HEAD", url, allow_redirects=False, verify_ssl=False
             ) as response:
                 response.raise_for_status()
                 return response.headers.get("location", "")
