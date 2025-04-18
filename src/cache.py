@@ -28,7 +28,7 @@ class SQLiteCache:
             """
         )
         await self.cursor.execute("PRAGMA journal_mode = WAL")
-        await self.cursor.execute("CREATE INDEX key_index ON cache(key)")
+        await self.cursor.execute("CREATE INDEX IF NOT EXISTS key_index ON cache(key)")
         await self.conn.commit()
 
     async def set(self, key, value):
