@@ -10,7 +10,7 @@ scraper_sf = Singleflight[str, Post | None]()
 
 
 async def get_post(post_id: str, proxy: str = "") -> Post | None:
-    post = await post_cache.get(post_id)
+    post = post_cache.get(post_id)
     if post:
         return deserialize_post(post)
 
@@ -24,5 +24,5 @@ async def _get_post(post_id: str, proxy: str = "") -> Post | None:
     if not post or post.blocked:
         post = await get_query_api(post_id, proxy)
     if post:
-        await post_cache.set(post_id, serialize_post(post))
+        post_cache.set(post_id, serialize_post(post))
     return post

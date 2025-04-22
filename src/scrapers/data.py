@@ -107,7 +107,9 @@ class HTTPSession:
 
     async def http_post(self, url: str, data: dict) -> str:
         async with proxy_limit:
-            async with self._session.request("POST", url, data=data, verify_ssl=False) as response:
+            async with self._session.request(
+                "POST", url, data=data, verify_ssl=False
+            ) as response:
                 response.raise_for_status()
                 return await response.text()
 

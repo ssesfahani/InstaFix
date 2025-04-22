@@ -130,18 +130,12 @@ async def grid(request: aiohttp.web_request.Request):
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 
-async def init_cache():
-    await post_cache.init_cache()
-    await shareid_cache.init_cache()
-
-
 if __name__ == "__main__":
     import asyncio
 
     import uvloop
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    asyncio.run(init_cache())
 
     app = web.Application()
     app.add_routes(
