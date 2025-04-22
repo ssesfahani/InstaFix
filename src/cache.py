@@ -26,6 +26,7 @@ class KVCache:
         if self._counter % 1000 == 0:
             remove_grid_cache()
             self.evict()
+            self._counter = 0
 
     def get(self, key: str | bytes) -> Optional[bytes]:
         if isinstance(key, str):
