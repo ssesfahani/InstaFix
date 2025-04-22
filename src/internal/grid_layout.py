@@ -1,17 +1,19 @@
-from io import BytesIO
+import os
+import tempfile
 from typing import List, Optional
 
 import aiohttp
 import networkx as nx
-from PIL import Image
+import pyvips
 
 MAX_ROW_HEIGHT = 1000
 
 
 def get_height(images_wh, canvas_width):
-    """Calculate row height for given image dimensions."""
-    height_sum = sum(w / h for w, h in images_wh)
-    return canvas_width / height_sum
+    """Calculate the height (in pixels) of a row that fits canvas_width."""
+    # same logic as before: sum of (w/h) ratios
+    ratio_sum = sum(w / h for w, h in images_wh)
+    return canvas_width / ratio_sum
 
 
 def cost_fn(images_wh, i, j, canvas_width):
@@ -28,45 +30,68 @@ def create_graph(images_wh, start, canvas_width):
     return results
 
 
-def generate_grid(images: List[Image.Image], out_fname: str) -> Optional[str]:
-    """Generate a grid image based on the best row layout."""
-    images_wh = [(img.width, img.height) for img in images] + [(0, 0)]
-    canvas_width = int(sum(w for w, _ in images_wh) / len(images_wh) * 1.5)
+def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
+    """
+    Given a list of file paths, lay them out in an optimal
+    multi-row “justified” grid and write the result to out_fname.
 
+    Returns out_fname on success, None on failure.
+    """
+    # 1) Load metadata
+    im_meta = []
+    for path in image_paths:
+        img = pyvips.Image.new_from_file(path, access="sequential")
+        im_meta.append((img.width, img.height))
+    # sentinel to mark the "end" node
+    im_meta.append((0, 0))
+
+    # 2) Choose canvas width ~ average image width × a factor
+    avg_w = sum(w for w, h in im_meta) / len(im_meta)
+    canvas_w = int(avg_w * 1.5)
+
+    # 3) Build graph of breakpoints with costs
     G = nx.DiGraph()
-    for i in range(len(images)):
-        edges = create_graph(images_wh, i, canvas_width)
-        for j, cost in edges.items():
+    n = len(im_meta) - 1  # last index is the sentinel
+    for i in range(n):
+        for j, cost in create_graph(im_meta, i, canvas_w).items():
             G.add_edge(i, j, weight=cost)
 
+    # 4) Shortest‐path from 0 → n
     try:
-        path = nx.shortest_path(G, 0, len(images), weight="weight")
+        path = nx.shortest_path(G, 0, n, weight="weight")
     except nx.NetworkXNoPath:
         return None
 
-    canvas_height, row_heights = 0, []
-    for i in range(1, len(path)):
-        row_height = int(get_height(images_wh[path[i - 1] : path[i]], canvas_width))
-        row_heights.append(row_height)
-        canvas_height += row_height
+    # 5) Compute each row height and total canvas height
+    row_heights = []
+    total_h = 0
+    for u, v in zip(path, path[1:]):
+        row_h = int(get_height(im_meta[u:v], canvas_w))
+        row_heights.append(row_h)
+        total_h += row_h
 
-    canvas = Image.new("RGB", (canvas_width, canvas_height))
+    # 6) Create a black RGB canvas
+    # black() yields 1‐band; bandjoin → 3 bands (R=G=B=0)
+    canvas = pyvips.Image.black(canvas_w, total_h).bandjoin(
+        [pyvips.Image.black(canvas_w, total_h)] * 2
+    )
+
+    # 7) Composite each row of images
     y_offset = 0
-
-    for i in range(1, len(path)):
-        row = images[path[i - 1] : path[i]]
-        row_height = row_heights[i - 1]
+    for (u, v), row_h in zip(zip(path, path[1:]), row_heights):
         x_offset = 0
+        for idx in range(u, v):
+            img = pyvips.Image.new_from_file(image_paths[idx], access="sequential")
+            # scale factor so height → row_h
+            scale = row_h / img.height
+            img_resized = img.resize(scale)
+            # insert into canvas at (x_offset, y_offset)
+            canvas = canvas.insert(img_resized, x_offset, y_offset)
+            x_offset += img_resized.width
+        y_offset += row_h
 
-        for img in row:
-            new_width = int(row_height * (img.width / img.height))
-            img_resized = img.resize((new_width, row_height))
-            canvas.paste(img_resized, (x_offset, y_offset))
-            x_offset += new_width
-
-        y_offset += row_height
-
-    canvas.save(out_fname)
+    # 8) Save
+    canvas.write_to_file(out_fname)
     return out_fname
 
 
@@ -76,5 +101,15 @@ async def grid_from_urls(urls: List[str], out_fname: str) -> Optional[str]:
     async with aiohttp.ClientSession() as session:
         for url in urls:
             async with session.get(url) as response:
-                images.append(Image.open(BytesIO(await response.read())))
-    return generate_grid(images, out_fname)
+                with tempfile.NamedTemporaryFile(suffix=".jpeg", delete=False) as f:
+                    f.write(await response.read())
+                    images.append(f.name)
+    x = None
+    try:
+        x = generate_grid(images, out_fname)
+    except:
+        pass
+    finally:
+        for f in images:
+            os.remove(f)
+        return x

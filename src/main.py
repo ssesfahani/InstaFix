@@ -114,11 +114,7 @@ async def grid(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
-    images = [
-        media.url
-        for media in post.medias
-        if media.type == "GraphImage"
-    ]
+    images = [media.url for media in post.medias if media.type == "GraphImage"]
 
     grid_fname = await grid_sf.do(
         post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg"
@@ -126,7 +122,7 @@ async def grid(request: aiohttp.web_request.Request):
     if grid_fname is None:
         raise
 
-    with open(grid_fname, "rb") as f:
+    with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 

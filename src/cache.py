@@ -48,10 +48,7 @@ class KVCache:
                     if len(curs.key()) != 8 and len(curs.value()) == 0:
                         continue
                     timestamp = int.from_bytes(curs.key(), "little")
-                    if (
-                        timestamp == 0
-                        or ns_time - timestamp < ns_ttl
-                    ):
+                    if timestamp == 0 or ns_time - timestamp < ns_ttl:
                         continue
                     to_remove.add(curs.value())
                     txn.delete(curs.key())
