@@ -39,23 +39,43 @@ class KVCache:
             return buf_copy
 
     def evict(self):
-        ns_ttl = self.ttl * 1000 * 1000
-        ns_time = time.time_ns()
-        to_remove = set()
-        with self.env.begin(write=True, db=self.meta_db) as txn:
-            with txn.cursor() as curs:
-                while curs.next():
-                    if len(curs.key()) != 8 and len(curs.value()) == 0:
-                        continue
-                    timestamp = int.from_bytes(curs.key(), "little")
-                    if timestamp == 0 or ns_time - timestamp < ns_ttl:
-                        continue
-                    to_remove.add(curs.value())
-                    txn.delete(curs.key())
+        # 1. Compute TTL in *nanoseconds*
+        ns_ttl = self.ttl * 1_000_000_000
+        now_ns = time.time_ns()
 
-        with self.env.begin(write=True, db=self.data_db) as txn:
-            for key in to_remove:
-                txn.delete(key)
+        # 2. Collect meta-keys to delete and corresponding data-DB keys
+        meta_keys_to_delete = []
+        data_keys_to_delete = []
+
+        with self.env.begin(write=True, db=self.meta_db) as txn:
+            curs = txn.cursor()
+            if not curs.first():
+                return  # nothing in meta_db
+
+            for k, v in curs:
+                # skip invalid entries
+                if len(k) != 8 or len(v) == 0:
+                    continue
+
+                ts = int.from_bytes(k, byteorder="little")
+                # skip non-expiring or not-yet-expired
+                if ts == 0 or (now_ns - ts) < ns_ttl:
+                    continue
+
+                meta_keys_to_delete.append(k)
+                data_keys_to_delete.append(v)
+
+        # 3. Delete expired metadata
+        if meta_keys_to_delete:
+            with self.env.begin(write=True, db=self.meta_db) as txn:
+                for k in meta_keys_to_delete:
+                    txn.delete(k)
+
+        # 4. Delete corresponding data entries
+        if data_keys_to_delete:
+            with self.env.begin(write=True, db=self.data_db) as txn:
+                for data_key in data_keys_to_delete:
+                    txn.delete(data_key)
 
 
 def remove_grid_cache(max_cache: int = 5_000):
