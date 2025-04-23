@@ -2,6 +2,7 @@ import json
 import time
 
 import aiohttp.client_exceptions
+from loguru import logger
 from selectolax.parser import HTMLParser
 
 from internal.jslex import js_lexer_string
@@ -14,7 +15,8 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
             html = await session.http_get(
                 f"https://www.instagram.com/p/{post_id}/embed/captioned/",
             )
-    except aiohttp.client_exceptions.ClientResponseError:
+    except aiohttp.client_exceptions.ClientResponseError as e:
+        logger.error(f"[{post_id}] Error when fetching post from API: {e}")
         return None
 
     medias = []

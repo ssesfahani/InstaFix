@@ -3,6 +3,7 @@ import time
 
 import aiohttp
 import aiohttp.client_exceptions
+from loguru import logger
 
 from scrapers.data import HTTPSession, Media, Post
 
@@ -29,7 +30,8 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
                 "https://www.instagram.com/graphql/query", data=data
             )
             query_json = json.loads(text)
-    except aiohttp.client_exceptions.ClientResponseError:
+    except aiohttp.client_exceptions.ClientResponseError as e:
+        logger.error(f"[{post_id}] Error when fetching post from API: {e}")
         return None
 
     data = query_json.get("data")
