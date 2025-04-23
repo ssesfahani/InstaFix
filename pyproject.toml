@@ -6,12 +6,14 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp[speedups]>=3.11.14",
+    "cython>=3.0.11",
     "lmdb>=1.6.2",
     "loguru>=0.7.3",
     "networkx>=3.4.2",
     "pyvips>=2.2.3",
     "pyvips-binary>=8.16.1",
     "selectolax[cython]>=0.3.28",
+    "setuptools>=79.0.0",
     "tomli>=2.2.1",
     "uvloop>=0.21.0",
 ]

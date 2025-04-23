@@ -5,7 +5,7 @@ import aiohttp.client_exceptions
 from loguru import logger
 from selectolax.parser import HTMLParser
 
-from internal.jslex import js_lexer_string
+from internal.jslex.js_string import js_lexer_string
 from scrapers.data import HTTPSession, Media, Post
 
 
