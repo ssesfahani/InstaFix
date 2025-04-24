@@ -9,6 +9,55 @@ import pyvips
 MAX_ROW_HEIGHT = 1000
 
 
+def get_jpeg_dimensions(file_path):
+    with open(file_path, "rb") as file:
+        # Skip the first two bytes (JPEG SOI marker)
+        file.seek(2)
+
+        while True:
+            # Read marker
+            marker = file.read(2)
+
+            # EOF check
+            if len(marker) < 2:
+                raise ValueError("Invalid JPEG file or dimensions not found")
+
+            # Check if we've reached a Start Of Frame marker (SOFn)
+            # SOF0 (0xFFC0), SOF1 (0xFFC1), SOF2 (0xFFC2), etc.
+            marker_code = (marker[0] << 8) + marker[1]
+            is_sof = (
+                (marker_code >= 0xFFC0 and marker_code <= 0xFFC3)
+                or (marker_code >= 0xFFC5 and marker_code <= 0xFFC7)
+                or (marker_code >= 0xFFC9 and marker_code <= 0xFFCB)
+                or (marker_code >= 0xFFCD and marker_code <= 0xFFCF)
+            )
+
+            if is_sof:
+                # Skip segment length and precision bytes
+                file.seek(3, 1)
+
+                # Read height and width (big-endian)
+                height_bytes = file.read(2)
+                width_bytes = file.read(2)
+
+                height = (height_bytes[0] << 8) + height_bytes[1]
+                width = (width_bytes[0] << 8) + width_bytes[1]
+
+                return width, height
+            else:
+                # Skip to the next marker
+                # First, get segment length
+                length_bytes = file.read(2)
+                if len(length_bytes) < 2:
+                    raise ValueError("Invalid JPEG file or dimensions not found")
+
+                # Length includes the 2 bytes for the length field itself
+                length = (length_bytes[0] << 8) + length_bytes[1] - 2
+
+                # Skip to the next marker
+                file.seek(length, 1)
+
+
 def get_height(images_wh, canvas_width):
     """Calculate the height (in pixels) of a row that fits canvas_width."""
     # same logic as before: sum of (w/h) ratios
@@ -40,8 +89,8 @@ def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
     # 1) Load metadata
     im_meta = []
     for path in image_paths:
-        img = pyvips.Image.new_from_file(path, access="sequential")
-        im_meta.append((img.width, img.height))
+        img_width, img_height = get_jpeg_dimensions(path)
+        im_meta.append((img_width, img_height))
     # sentinel to mark the "end" node
     im_meta.append((0, 0))
 
@@ -71,7 +120,7 @@ def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
         total_h += row_h
 
     # 6) Create a black RGB canvas
-    # black() yields 1‐band; bandjoin → 3 bands (R=G=B=0)
+    # black() yields 1‐band; bandjoin -> 3 bands (R=G=B=0)
     canvas = pyvips.Image.black(canvas_w, total_h).bandjoin(
         [pyvips.Image.black(canvas_w, total_h)] * 2
     )
@@ -82,7 +131,7 @@ def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
         x_offset = 0
         for idx in range(u, v):
             img = pyvips.Image.new_from_file(image_paths[idx], access="sequential")
-            # scale factor so height → row_h
+            # scale factor so height -> row_h
             scale = row_h / img.height
             img_resized = img.resize(scale)
             # insert into canvas at (x_offset, y_offset)
@@ -104,12 +153,5 @@ async def grid_from_urls(urls: List[str], out_fname: str) -> Optional[str]:
                 with tempfile.NamedTemporaryFile(suffix=".jpeg", delete=False) as f:
                     f.write(await response.read())
                     images.append(f.name)
-    x = None
-    try:
-        x = generate_grid(images, out_fname)
-    except:
-        pass
-    finally:
-        for f in images:
-            os.remove(f)
-        return x
+
+    return generate_grid(images, out_fname)
