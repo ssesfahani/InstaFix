@@ -7,7 +7,7 @@ import lmdb
 
 class KVCache:
     def __init__(self, db_path="cache.db", ttl=300):
-        self.env = lmdb.open(db_path, max_dbs=2, map_size=int(1e9))
+        self.env = lmdb.open(db_path, max_dbs=2, map_size=int(1e10))
         self.data_db = self.env.open_db(b"data")
         self.meta_db = self.env.open_db(b"meta")
         self.ttl = ttl
