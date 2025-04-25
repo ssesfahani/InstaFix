@@ -36,7 +36,7 @@ async def embed(request: aiohttp.web_request.Request):
         logger.error(f"Invalid media_num: {request.path}")
         return web.Response(status=404)
 
-    if post_id[0] == "B":
+    if post_id[0] == "B" or post_id[0] == "_":
         resolve_id = await resolve_share_id(post_id)
         if resolve_id:
             post_id = resolve_id
@@ -159,6 +159,8 @@ if __name__ == "__main__":
             web.get("/reels/{post_id}/", embed),
             web.get("/share/{post_id}/", embed),
             web.get("/share/{post_id}/{media_num}/", embed),
+            web.get("/share/reel/{post_id}/", embed),
+            web.get("/share/reel/{post_id}/{media_num}/", embed),
             web.get("/stories/{username}/{post_id}/", embed),
             web.get("/images/{post_id}/{media_id}/", media_redirect),
             web.get("/videos/{post_id}/{media_id}/", media_redirect),
