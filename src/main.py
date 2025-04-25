@@ -15,6 +15,26 @@ from scrapers.share import resolve_share_id
 from templates.embed import render_embed
 
 
+def instagram_id_to_url(instagram_id):
+    # Split if there's an underscore
+    if "_" in str(instagram_id):
+        parts = str(instagram_id).split("_")
+        instagram_id = int(parts[0])  # only use the media ID part
+        # userid = parts[1]  # not used in the URL
+    else:
+        instagram_id = int(instagram_id)
+
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    url_suffix = ""
+
+    while instagram_id > 0:
+        remainder = instagram_id % 64
+        instagram_id = instagram_id // 64
+        url_suffix = alphabet[remainder] + url_suffix
+
+    return url_suffix
+
+
 async def home(request: aiohttp.web_request.Request):
     return web.Response(text="Hello, world")
 
@@ -30,6 +50,9 @@ async def embed(request: aiohttp.web_request.Request):
         return web.Response(status=307, headers={"Location": ig_url})
 
     post_id = request.match_info.get("post_id", "")
+    if post_id.isdigit():  # stories
+        post_id = instagram_id_to_url(post_id)
+
     try:
         media_num = int(request.match_info.get("media_num", 0))
     except ValueError:
