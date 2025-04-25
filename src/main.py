@@ -116,11 +116,11 @@ async def grid(request: aiohttp.web_request.Request):
 
     images = [media.url for media in post.medias if media.type == "GraphImage"]
 
-    grid_fname = await grid_sf.do(
-        post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg"
-    )
-    if grid_fname is None:
-        raise
+    try:
+        await grid_sf.do(post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg")
+    except Exception as e:
+        logger.error(f"[{post_id}] Failed to generate grid image: {e}")
+        raise web.HTTPFound(f"/images/{post_id}/1")
 
     with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
         return web.Response(body=f.read(), content_type="image/jpeg")

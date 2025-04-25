@@ -106,10 +106,7 @@ def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
             G.add_edge(i, j, weight=cost)
 
     # 4) Shortest‐path from 0 → n
-    try:
-        path = nx.shortest_path(G, 0, n, weight="weight")
-    except nx.NetworkXNoPath:
-        return None
+    path = nx.shortest_path(G, 0, n, weight="weight")
 
     # 5) Compute each row height and total canvas height
     row_heights = []
@@ -154,4 +151,10 @@ async def grid_from_urls(urls: List[str], out_fname: str) -> Optional[str]:
                     f.write(await response.read())
                     images.append(f.name)
 
-    return generate_grid(images, out_fname)
+    try:
+        return generate_grid(images, out_fname)
+    except Exception as e:
+        raise e
+    finally:
+        for f in images:
+            os.remove(f)
