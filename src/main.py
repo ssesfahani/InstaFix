@@ -47,6 +47,7 @@ async def embed(request: aiohttp.web_request.Request):
     # logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
+        logger.warning(f"[{post_id}] Failed to get post, might be not found")
         raise web.HTTPFound(ig_url)
 
     jinja_ctx = {
