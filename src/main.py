@@ -30,24 +30,24 @@ async def embed(request: aiohttp.web_request.Request):
         return web.Response(status=307, headers={"Location": ig_url})
 
     post_id = request.match_info.get("post_id", "")
-    media_num = int(request.match_info.get("media_num", 0))
+    try:
+        media_num = int(request.match_info.get("media_num", 0))
+    except ValueError:
+        logger.error(f"Invalid media_num: {request.path}")
+        return web.Response(status=404)
 
     if post_id[0] == "B":
         resolve_id = await resolve_share_id(post_id)
         if resolve_id:
             post_id = resolve_id
         else:
-            raise web.HTTPFound(
-                f"https://www.instagram.com/p/{post_id}",
-            )
+            raise web.HTTPFound(ig_url)
 
     post = await get_post(post_id)
     # logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:
-        raise web.HTTPFound(
-            f"https://www.instagram.com/p/{post_id}",
-        )
+        raise web.HTTPFound(ig_url)
 
     jinja_ctx = {
         "theme_color": "#0084ff",
