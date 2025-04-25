@@ -159,6 +159,8 @@ if __name__ == "__main__":
             web.get("/reels/{post_id}/", embed),
             web.get("/share/{post_id}/", embed),
             web.get("/share/{post_id}/{media_num}/", embed),
+            web.get("/share/p/{post_id}/", embed),
+            web.get("/share/p/{post_id}/{media_num}/", embed),
             web.get("/share/reel/{post_id}/", embed),
             web.get("/share/reel/{post_id}/{media_num}/", embed),
             web.get("/stories/{username}/{post_id}/", embed),
