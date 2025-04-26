@@ -1,5 +1,6 @@
 import json
 import time
+from typing import List
 
 import aiohttp.client_exceptions
 from loguru import logger
@@ -19,7 +20,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         logger.error(f"[{post_id}] Error when fetching post from API: {e}")
         return None
 
-    medias = []
+    medias: List[Media] = []
     tree = HTMLParser(html)
     # ---- from timesliceimpl ----
     for script in tree.css("script"):
@@ -41,9 +42,25 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                     for media in post_medias:
                         media = media.get("node", media)
                         if video_url := media.get("video_url"):
-                            medias.append(Media(url=video_url, type="GraphVideo"))
+                            medias.append(
+                                Media(
+                                    url=video_url,
+                                    type="GraphVideo",
+                                    width=0,
+                                    height=0,
+                                    duration=0,
+                                )
+                            )
                         elif media_url := media.get("display_url"):
-                            medias.append(Media(url=media_url, type="GraphImage"))
+                            medias.append(
+                                Media(
+                                    url=media_url,
+                                    type="GraphImage",
+                                    width=0,
+                                    height=0,
+                                    duration=0,
+                                )
+                            )
 
                     if len(medias) > 0:
                         break
@@ -64,7 +81,11 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         if media_html:
             media_url = media_html["src"]
             if media_url:
-                medias.append(Media(url=media_url, type="GraphImage"))
+                medias.append(
+                    Media(
+                        url=media_url, type="GraphImage", width=0, height=0, duration=0
+                    )
+                )
 
     if len(medias) == 0:
         return None

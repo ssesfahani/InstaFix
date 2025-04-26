@@ -48,9 +48,13 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     for media in post_medias:
         media = media.get("node", media)
         if video_url := media.get("video_url"):
-            medias.append(Media(url=video_url, type="GraphVideo"))
+            medias.append(
+                Media(url=video_url, type="GraphVideo", width=0, height=0, duration=0)
+            )
         elif media_url := media.get("display_url"):
-            medias.append(Media(url=media_url, type="GraphImage"))
+            medias.append(
+                Media(url=media_url, type="GraphImage", width=0, height=0, duration=0)
+            )
 
     username = shortcode_media.get("owner", {}).get("username")
     caption = ""

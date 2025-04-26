@@ -6,7 +6,6 @@ import aiohttp.web_request
 from aiohttp import web
 from loguru import logger
 
-from cache import post_cache, shareid_cache
 from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
@@ -75,18 +74,22 @@ async def embed(request: aiohttp.web_request.Request):
 
     jinja_ctx = {
         "theme_color": "#0084ff",
-        "twitter_title": post.username,
+        "twitter_title": post["username"],
         "og_site_name": "InstaFix",
         "og_url": ig_url,
-        "og_description": post.caption,
+        "og_description": post["caption"],
         "redirect_url": ig_url,
     }
-    if media_num == 0 and post.medias[0].type == "GraphImage" and len(post.medias) > 1:
-        jinja_ctx["image_url"] = f"/grid/{post.post_id}/"
-    elif post.medias[max(1, media_num) - 1].type == "GraphImage":
-        jinja_ctx["image_url"] = f"/images/{post.post_id}/{max(1, media_num)}"
+    if (
+        media_num == 0
+        and post["medias"][0]["type"] == "GraphImage"
+        and len(post["medias"]) > 1
+    ):
+        jinja_ctx["image_url"] = f"/grid/{post['post_id']}/"
+    elif post["medias"][max(1, media_num) - 1]["type"] == "GraphImage":
+        jinja_ctx["image_url"] = f"/images/{post['post_id']}/{max(1, media_num)}"
     else:
-        jinja_ctx["video_url"] = f"/videos/{post.post_id}/{max(1, media_num)}"
+        jinja_ctx["video_url"] = f"/videos/{post['post_id']}/{max(1, media_num)}"
 
     # direct = redirect to media url
     if request.query.get("direct"):
@@ -118,8 +121,8 @@ async def media_redirect(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
-    media = post.medias[int(media_id) - 1]
-    return web.Response(status=307, headers={"Location": media.url})
+    media = post["medias"][int(media_id) - 1]
+    return web.Response(status=307, headers={"Location": media["url"]})
 
 
 grid_sf = Singleflight[str, str | None]()
@@ -138,7 +141,7 @@ async def grid(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
-    images = [media.url for media in post.medias if media.type == "GraphImage"]
+    images = [media["url"] for media in post["medias"] if media["type"] == "GraphImage"]
 
     try:
         await grid_sf.do(post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg")
