@@ -1,4 +1,5 @@
 import marshal
+from typing import Any
 
 from cache import post_cache
 from internal.singleflight import Singleflight
@@ -24,5 +25,5 @@ async def _get_post(post_id: str, proxy: str = "") -> Post | None:
     if not post or post["blocked"]:
         post = await get_query_api(post_id, proxy)
     if post:
-        post_cache.set(post_id, marshal.dumps(dict(post)))
+        post_cache.set(post_id, marshal.dumps(post))  # type: ignore
     return post
