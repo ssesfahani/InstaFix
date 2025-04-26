@@ -35,32 +35,25 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                     .get("gql_data", {})
                     .get("shortcode_media")
                 )
+                print(shortcode_media)
                 if shortcode_media:
                     post_medias = shortcode_media.get(
                         "edge_sidecar_to_children", {}
                     ).get("edges", [shortcode_media])
                     for media in post_medias:
                         media = media.get("node", media)
-                        if video_url := media.get("video_url"):
-                            medias.append(
-                                Media(
-                                    url=video_url,
-                                    type="GraphVideo",
-                                    width=0,
-                                    height=0,
-                                    duration=0,
-                                )
+                        media_url = media.get("video_url")
+                        if not media_url:
+                            media_url = media.get("display_url")
+                        medias.append(
+                            Media(
+                                url=media_url,
+                                type=media["__typename"],
+                                width=media["dimensions"]["width"],
+                                height=media["dimensions"]["height"],
+                                duration=0,
                             )
-                        elif media_url := media.get("display_url"):
-                            medias.append(
-                                Media(
-                                    url=media_url,
-                                    type="GraphImage",
-                                    width=0,
-                                    height=0,
-                                    duration=0,
-                                )
-                            )
+                        )
 
                     if len(medias) > 0:
                         break
