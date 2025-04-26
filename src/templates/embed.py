@@ -6,11 +6,15 @@ def render_embed(
     og_url,
     twitter_title,
     og_site_name,
+    media_width,
+    media_height,
     og_description=None,
     image_url=None,
     video_url=None,
     redirect_url=None,
 ):
+    if media_height == 0:
+        media_height = ""
     html = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -44,10 +48,14 @@ def render_embed(
         <meta property="og:video" content="{video_url}"/>
         <meta property="og:video:secure_url" content="{video_url}"/>
         <meta property="og:video:type" content="video/mp4"/>
+        <meta property="og:video:width" content="{media_width}"/>
+        <meta property="og:video:height" content="{media_height}"/>
 
         <meta property="twitter:card" content="player"/>
         <meta property="twitter:player:stream" content="{video_url}"/>
         <meta property="twitter:player:stream:content_type" content="video/mp4"/>
+        <meta property="twitter:player:width" content="{media_width}"/>
+        <meta property="twitter:player:height" content="{media_height}"/>
     """
 
     html += f"""
