@@ -35,7 +35,6 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                     .get("gql_data", {})
                     .get("shortcode_media")
                 )
-                print(shortcode_media)
                 if shortcode_media:
                     post_medias = shortcode_media.get(
                         "edge_sidecar_to_children", {}

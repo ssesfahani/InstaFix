@@ -79,6 +79,8 @@ async def embed(request: aiohttp.web_request.Request):
         "og_url": ig_url,
         "og_description": post["caption"],
         "redirect_url": ig_url,
+        "media_width": post["medias"][max(1, media_num) - 1]["width"],
+        "media_height": post["medias"][max(1, media_num) - 1]["height"],
     }
     if (
         media_num == 0
@@ -86,6 +88,9 @@ async def embed(request: aiohttp.web_request.Request):
         and len(post["medias"]) > 1
     ):
         jinja_ctx["image_url"] = f"/grid/{post['post_id']}/"
+        # TODO: add media_width and media_height
+        jinja_ctx["media_width"] = 0
+        jinja_ctx["media_height"] = 0
     elif post["medias"][max(1, media_num) - 1]["type"] == "GraphImage":
         jinja_ctx["image_url"] = f"/images/{post['post_id']}/{max(1, media_num)}"
     else:
