@@ -1,81 +1,76 @@
 import os
+import sqlite3
 import time
-from typing import Optional
-
-import lmdb
 
 
-class KVCache:
+class SQLiteCache:
     def __init__(self, db_path="cache.db", ttl=300):
-        self.env = lmdb.open(db_path, max_dbs=2, map_size=int(1e10))
-        self.data_db = self.env.open_db(b"data")
-        self.meta_db = self.env.open_db(b"meta")
+        self.db_path = db_path
         self.ttl = ttl
         self._counter = 0
+        self.init_cache()
 
+    def init_cache(self):
+        self.conn = sqlite3.connect(self.db_path)
+        self.cursor = self.conn.cursor()
+        self.create_table()
         self.evict()
 
-    def set(self, key: str, value: bytes):
-        timestamp = time.time_ns()
-        with self.env.begin(write=True, db=self.data_db) as txn:
-            txn.put(key.encode(), value)
-        with self.env.begin(write=True, db=self.meta_db) as txn:
-            txn.put(timestamp.to_bytes(8, "little"), key.encode())
+    def create_table(self):
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cache (
+                key TEXT PRIMARY KEY,
+                value BLOB,
+                timestamp INTEGER
+            )
+            """
+        )
+        self.conn.commit()
 
+    def set(self, key, value):
+        timestamp = int(time.time())
+        self.cursor.execute(
+            "REPLACE INTO cache (key, value, timestamp) VALUES (?, ?, ?)",
+            (key, value, timestamp),
+        )
+        self.conn.commit()
+
+        # Evict every 1000 requests
         self._counter += 1
         if self._counter % 1000 == 0:
-            remove_grid_cache()
             self.evict()
+            remove_grid_cache()
+
             self._counter = 0
 
-    def get(self, key: str | bytes) -> Optional[bytes]:
-        if isinstance(key, str):
-            key = key.encode()
-        with self.env.begin(write=False, buffers=True, db=self.data_db) as txn:
-            buf = txn.get(key)
-            if buf is None:
-                return None
-            buf_copy = bytes(buf)
-            return buf_copy
+    def get(self, key):
+        self.cursor.execute("SELECT value, timestamp FROM cache WHERE key = ?", (key,))
+        row = self.cursor.fetchone()
+        if row:
+            value, timestamp = row
+            if int(time.time()) - timestamp < self.ttl:
+                return value
+            else:
+                self.delete(key)  # Remove expired entry
+        return None
+
+    def delete(self, key):
+        self.cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
+        self.conn.commit()
+
+    def clear(self):
+        self.cursor.execute("DELETE FROM cache")
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
 
     def evict(self):
-        # 1. Compute TTL in *nanoseconds*
-        ns_ttl = self.ttl * 1_000_000_000
-        now_ns = time.time_ns()
-
-        # 2. Collect meta-keys to delete and corresponding data-DB keys
-        meta_keys_to_delete = []
-        data_keys_to_delete = []
-
-        with self.env.begin(write=True, db=self.meta_db) as txn:
-            curs = txn.cursor()
-            if not curs.first():
-                return  # nothing in meta_db
-
-            for k, v in curs:
-                # skip invalid entries
-                if len(k) != 8 or len(v) == 0:
-                    continue
-
-                ts = int.from_bytes(k, byteorder="little")
-                # skip non-expiring or not-yet-expired
-                if ts == 0 or (now_ns - ts) < ns_ttl:
-                    continue
-
-                meta_keys_to_delete.append(k)
-                data_keys_to_delete.append(v)
-
-        # 3. Delete expired metadata
-        if meta_keys_to_delete:
-            with self.env.begin(write=True, db=self.meta_db) as txn:
-                for k in meta_keys_to_delete:
-                    txn.delete(k)
-
-        # 4. Delete corresponding data entries
-        if data_keys_to_delete:
-            with self.env.begin(write=True, db=self.data_db) as txn:
-                for data_key in data_keys_to_delete:
-                    txn.delete(data_key)
+        self.cursor.execute(
+            "DELETE FROM cache WHERE timestamp < ?", (int(time.time()) - self.ttl,)
+        )
+        self.conn.commit()
 
 
 def remove_grid_cache(max_cache: int = 5_000):
@@ -89,5 +84,5 @@ def remove_grid_cache(max_cache: int = 5_000):
 if os.path.exists("cache") is False:
     os.makedirs("cache")
     os.makedirs("cache/grid")
-post_cache = KVCache(db_path="cache/post_data", ttl=24 * 60 * 60)
-shareid_cache = KVCache(db_path="cache/shareid_data", ttl=365 * 24 * 60 * 60)
+post_cache = SQLiteCache(db_path="cache/post_data.db", ttl=24 * 60 * 60)
+shareid_cache = SQLiteCache(db_path="cache/shareid_data.db", ttl=365 * 24 * 60 * 60)
