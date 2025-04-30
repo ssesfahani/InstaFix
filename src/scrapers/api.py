@@ -34,7 +34,8 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
                 query_json = json.loads(text)
                 break
         except aiohttp.client_exceptions.ClientResponseError as e:
-            logger.error(f"[{post_id}] Error when fetching post from API: {e} | Retries left: {MAX_RETRIES-i-1}")
+            if i == MAX_RETRIES-1:
+                logger.error(f"[{post_id}] Error when fetching post from API: {e}")
     else:
         return None
 
