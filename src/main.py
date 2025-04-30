@@ -63,6 +63,7 @@ async def embed(request: aiohttp.web_request.Request):
         if resolve_id:
             post_id = resolve_id
         else:
+            logger.error(f"[{post_id}] Failed to resolve share id")
             raise web.HTTPFound(ig_url)
 
     post = await get_post(post_id)
