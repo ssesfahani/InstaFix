@@ -24,14 +24,18 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         }
     )
 
-    try:
-        async with HTTPSession() as session:
-            text = await session.http_post(
-                "https://www.instagram.com/graphql/query", data=data
-            )
-            query_json = json.loads(text)
-    except aiohttp.client_exceptions.ClientResponseError as e:
-        logger.error(f"[{post_id}] Error when fetching post from API: {e}")
+    MAX_RETRIES = 5
+    for i in range(MAX_RETRIES):
+        try:
+            async with HTTPSession() as session:
+                text = await session.http_post(
+                    "https://www.instagram.com/graphql/query", data=data
+                )
+                query_json = json.loads(text)
+                break
+        except aiohttp.client_exceptions.ClientResponseError as e:
+            logger.error(f"[{post_id}] Error when fetching post from API: {e} | Retries left: {MAX_RETRIES-i-1}")
+    else:
         return None
 
     data = query_json.get("data")
