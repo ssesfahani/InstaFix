@@ -17,7 +17,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                 f"https://www.instagram.com/p/{post_id}/embed/captioned/",
             )
     except aiohttp.client_exceptions.ClientResponseError as e:
-        logger.error(f"[{post_id}] Error when fetching post from API: {e}")
+        logger.error(f"[{post_id}] Error when fetching post from embed: {e}")
         return None
 
     medias: List[Media] = []
