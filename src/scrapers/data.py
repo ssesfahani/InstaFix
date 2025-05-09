@@ -27,8 +27,10 @@ class Post(TypedDict):
 
 # https://github.com/aio-libs/aiohttp/issues/4932#issuecomment-1611759696
 class HTTPSession:
-    def __init__(self) -> None:
-        self._session = aiohttp.ClientSession(proxy=config.get("HTTP_PROXY", ""))
+    def __init__(self, headers: dict[str, str] = {}):
+        self._session = aiohttp.ClientSession(
+            headers=headers, proxy=config.get("HTTP_PROXY", "")
+        )
 
     async def __aenter__(self) -> "HTTPSession":
         return self

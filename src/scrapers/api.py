@@ -9,11 +9,15 @@ from scrapers.data import HTTPSession, Media, Post
 
 
 async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
+    headers = {
+        "x-csrftoken": "-",
+    }
+
     data = {
         "fb_api_caller_class": "RelayModern",
         "fb_api_req_friendly_name": "PolarisPostActionLoadPostQueryQuery",
         "server_timestamps": "true",
-        "doc_id": "8845758582119845",
+        "doc_id": "9510064595728286",
     }
     data["variables"] = json.dumps(
         {
@@ -27,14 +31,14 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     MAX_RETRIES = 5
     for i in range(MAX_RETRIES):
         try:
-            async with HTTPSession() as session:
+            async with HTTPSession(headers=headers) as session:
                 text = await session.http_post(
                     "https://www.instagram.com/graphql/query", data=data
                 )
                 query_json = json.loads(text)
                 break
         except aiohttp.client_exceptions.ClientResponseError as e:
-            if i == MAX_RETRIES-1:
+            if i == MAX_RETRIES - 1:
                 logger.error(f"[{post_id}] Error when fetching post from API: {e}")
     else:
         return None
