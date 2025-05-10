@@ -62,6 +62,7 @@ class Singleflight(Generic[KT, RT]):
             else:
                 # No call in flight, we are the owner, create a new task
                 is_owner = True
+
                 # We wrap the actual function call and the cleanup logic
                 # in a new coroutine managed by this task.
                 async def task_wrapper():

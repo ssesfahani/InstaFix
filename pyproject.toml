@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp[speedups]>=3.11.14",
+    "black>=25.1.0",
+    "isort>=6.0.1",
     "loguru>=0.7.3",
     "networkx>=3.4.2",
     "pyvips>=2.2.3",
