@@ -1,11 +1,16 @@
 import asyncio
-from typing import List, TypedDict
 
 import aiohttp
+from typing_extensions import List, NotRequired, TypedDict
 
 from config import config
 
 proxy_limit = asyncio.Semaphore(50)
+
+
+class User(TypedDict):
+    username: str
+    full_name: NotRequired[str]
 
 
 class Media(TypedDict):
@@ -19,7 +24,7 @@ class Media(TypedDict):
 class Post(TypedDict):
     timestamp: int
     post_id: str
-    username: str
+    user: User
     caption: str
     medias: List[Media]
     blocked: bool

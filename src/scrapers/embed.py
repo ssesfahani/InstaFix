@@ -7,7 +7,7 @@ from loguru import logger
 from selectolax.parser import HTMLParser
 
 from internal.jslex import js_lexer_string
-from scrapers.data import HTTPSession, Media, Post
+from scrapers.data import HTTPSession, Media, Post, User
 
 
 async def get_embed(post_id: str, proxy: str = "") -> Post | None:
@@ -82,10 +82,11 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
     if len(medias) == 0:
         return None
 
+    user = User(username=username)
     return Post(
         timestamp=int(time.time()),
         post_id=post_id,
-        username=username,
+        user=user,
         caption=caption,
         medias=medias,
         blocked="WatchOnInstagram" in html,

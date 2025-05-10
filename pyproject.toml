@@ -14,5 +14,6 @@ dependencies = [
     "pyvips-binary>=8.16.1",
     "selectolax[cython]>=0.3.28",
     "tomli>=2.2.1",
+    "typing-extensions>=4.13.2",
     "uvloop>=0.21.0",
 ]

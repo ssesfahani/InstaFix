@@ -4,7 +4,8 @@ from templates import escape_html
 def render_embed(
     theme_color,
     og_url,
-    twitter_title,
+    username,
+    full_name,
     og_site_name,
     media_width,
     media_height,
@@ -26,9 +27,19 @@ def render_embed(
         <meta property="og:url" content="{og_url}"/>
         <meta http-equiv="refresh" content="0; url={og_url}" />
 
-        <meta property="og:title" content="{twitter_title}"/>
-        <meta property="twitter:title" content="{twitter_title}"/>
         <meta property="og:site_name" content="{og_site_name}"/>
+    """
+
+    if username and full_name:
+        html += f"""
+        <meta property="og:title" content="{full_name} (@{username})"/>
+        <meta property="twitter:title" content="{full_name} (@{username})"/>
+    """
+
+    if username and not full_name:
+        html += f"""
+        <meta property="og:title" content="@{username}"/>
+        <meta property="twitter:title" content="@{username}"/>
     """
 
     if og_description:

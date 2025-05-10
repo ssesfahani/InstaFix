@@ -75,7 +75,8 @@ async def embed(request: aiohttp.web_request.Request):
 
     jinja_ctx = {
         "theme_color": "#0084ff",
-        "twitter_title": post["username"],
+        "username": post["user"]["username"],
+        "full_name": post["user"].get("full_name", ""),
         "og_site_name": "InstaFix",
         "og_url": ig_url,
         "og_description": post["caption"],

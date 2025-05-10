@@ -478,6 +478,7 @@ dependencies = [
     { name = "pyvips-binary" },
     { name = "selectolax", extra = ["cython"] },
     { name = "tomli" },
+    { name = "typing-extensions" },
     { name = "uvloop" },
 ]
 
@@ -492,6 +493,7 @@ requires-dist = [
     { name = "pyvips-binary", specifier = ">=8.16.1" },
     { name = "selectolax", extras = ["cython"], specifier = ">=0.3.28" },
     { name = "tomli", specifier = ">=2.2.1" },
+    { name = "typing-extensions", specifier = ">=4.13.2" },
     { name = "uvloop", specifier = ">=0.21.0" },
 ]
 
