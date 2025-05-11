@@ -1,5 +1,7 @@
+import json
 import os
 import re
+import urllib.parse
 
 import aiohttp
 import aiohttp.web_request
@@ -111,6 +113,15 @@ async def embed(request: aiohttp.web_request.Request):
     if request.query.get("gallery"):
         jinja_ctx.pop("og_description", None)
 
+    # oembed only for discord
+    if "discord" in request.headers.get("User-Agent", "").lower():
+        host = request.headers.get("Host", "")
+        oembed_endpoint = f"https://{host}/oembed/?"
+        oembed_params = {"author_name": post["caption"], "author_url": ig_url}
+        jinja_ctx["oembed_url"] = oembed_endpoint + urllib.parse.urlencode(
+            oembed_params
+        )
+
     return web.Response(
         body=render_embed(**jinja_ctx).encode(), content_type="text/html"
     )
@@ -160,6 +171,24 @@ async def grid(request: aiohttp.web_request.Request):
         return web.Response(body=f.read(), content_type="image/jpeg")
 
 
+async def oembed(request: aiohttp.web_request.Request):
+    author_name = request.query.get("author_name", "")
+    author_url = request.query.get("author_url", "")
+    return web.Response(
+        text=json.dumps(
+            {
+                "author_name": author_name,
+                "author_url": author_url,
+                "provider_name": "InstaFix - Fix Instagram Embed",
+                "provider_url": "https://github.com/Wikidepia/InstaFix",
+                "title": "Embed",
+                "type": "rich",
+                "version": "1.0",
+            }
+        )
+    )
+
+
 if __name__ == "__main__":
     import asyncio
 
@@ -201,6 +230,7 @@ if __name__ == "__main__":
             web.get("/images/{post_id}/{media_id}/", media_redirect),
             web.get("/videos/{post_id}/{media_id}/", media_redirect),
             web.get("/grid/{post_id}/", grid),
+            web.get("/oembed/", oembed),
         ]
     )
     web.run_app(

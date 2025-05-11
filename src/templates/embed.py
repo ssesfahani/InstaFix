@@ -13,6 +13,7 @@ def render_embed(
     image_url=None,
     video_url=None,
     redirect_url=None,
+    oembed_url=None,
 ):
     if media_height == 0:
         media_height = ""
@@ -67,6 +68,11 @@ def render_embed(
         <meta property="twitter:player:stream:content_type" content="video/mp4"/>
         <meta property="twitter:player:width" content="{media_width}"/>
         <meta property="twitter:player:height" content="{media_height}"/>
+    """
+
+    if oembed_url:
+        html += f"""
+        <link rel="alternate" href="{oembed_url}" type="application/json+oembed">
     """
 
     html += f"""
