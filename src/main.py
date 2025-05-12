@@ -113,6 +113,10 @@ async def embed(request: aiohttp.web_request.Request):
         host = request.headers.get("Host", "")
         oembed_endpoint = f"https://{host}/oembed/?"
         oembed_params = {"author_name": post["caption"], "author_url": ig_url}
+        # if image, dont add caption to oembed
+        if jinja_ctx.get("image_url"):
+            oembed_params["author_name"] = ""
+
         jinja_ctx["oembed_url"] = oembed_endpoint + urllib.parse.urlencode(
             oembed_params
         )
@@ -121,6 +125,10 @@ async def embed(request: aiohttp.web_request.Request):
             f"https://{host}/users/{post['user']['username']}/statuses/{int.from_bytes(post['post_id'].encode(), 'big')}"
         )
     pass
+
+    # use og embed if media is more than 4
+    if "grid" in jinja_ctx.get("image_url", "") and len(post["medias"]) > 4:
+        jinja_ctx["mastodon_statuses_url"] = None
 
     # gallery = no caption
     if request.query.get("gallery"):
