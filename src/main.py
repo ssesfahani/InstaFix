@@ -223,6 +223,9 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
     if not post:
         raise web.HTTPFound(f"https://www.instagram.com/p/{post_id}")
 
+    # activitypub caption/content must be a html
+    caption = post["caption"].replace("\n", "<br>")
+
     # create media attachment
     media_attachments = []
     for i, media in enumerate(post["medias"]):
@@ -283,7 +286,7 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
                 "in_reply_to_id": None,
                 "in_reply_to_account_id": None,
                 "language": "en",
-                "content": post["caption"],
+                "content": caption,
                 "spoiler_text": "",
                 "visibility": "public",
                 "application": {
