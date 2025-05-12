@@ -370,6 +370,7 @@ if __name__ == "__main__":
             web.get("/grid/{post_id}/", grid),
             web.get("/oembed/", oembed),
             web.get("/api/v1/statuses/{int_post_id}", mastodon_statuses),
+            web.get("/api/v1/statuses/{int_post_id}/", mastodon_statuses),
         ]
     )
     web.run_app(
