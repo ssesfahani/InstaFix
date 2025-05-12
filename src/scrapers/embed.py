@@ -63,6 +63,11 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
     else:
         return None
 
+    if pfpFind := tree.css_first("a.Avatar > img"):
+        profile_pic = pfpFind.attributes["src"] or ""
+    else:
+        return None
+
     caption = ""
     if captionFind := tree.css_first("div.Caption"):
         caption = captionFind.text(deep=False, separator="\n").strip()
@@ -82,7 +87,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
     if len(medias) == 0:
         return None
 
-    user = User(username=username)
+    user = User(username=username, profile_pic=profile_pic)
     return Post(
         timestamp=int(time.time()),
         post_id=post_id,

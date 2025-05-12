@@ -11,6 +11,7 @@ proxy_limit = asyncio.Semaphore(50)
 class User(TypedDict):
     username: str
     full_name: NotRequired[str]
+    profile_pic: str
 
 
 class Media(TypedDict):

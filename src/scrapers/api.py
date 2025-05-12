@@ -77,6 +77,7 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     user = User(
         username=shortcode_media.get("owner", {}).get("username"),
         full_name=shortcode_media.get("owner", {}).get("full_name"),
+        profile_pic=shortcode_media.get("owner", {}).get("profile_pic_url"),
     )
     return Post(
         timestamp=int(time.time()),
