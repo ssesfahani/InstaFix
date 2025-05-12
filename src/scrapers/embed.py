@@ -51,6 +51,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                                 width=media["dimensions"]["width"],
                                 height=media["dimensions"]["height"],
                                 duration=0,
+                                preview_url=media.get("display_url"),
                             )
                         )
 

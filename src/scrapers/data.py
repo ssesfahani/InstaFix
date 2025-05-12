@@ -20,6 +20,7 @@ class Media(TypedDict):
     width: int
     height: int
     duration: int
+    preview_url: NotRequired[str]  # needed only for graphvideo
 
 
 class Post(TypedDict):
