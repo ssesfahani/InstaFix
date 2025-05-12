@@ -80,9 +80,8 @@ async def embed(request: aiohttp.web_request.Request):
         "username": post["user"]["username"],
         "full_name": post["user"].get("full_name", ""),
         "og_site_name": "InstaFix",
-        "og_url": ig_url,
+        "post_url": ig_url,
         "og_description": post["caption"],
-        "redirect_url": ig_url,
         "media_width": post["medias"][max(1, media_num) - 1]["width"],
         "media_height": post["medias"][max(1, media_num) - 1]["height"],
     }
@@ -109,10 +108,6 @@ async def embed(request: aiohttp.web_request.Request):
             },
         )
 
-    # gallery = no caption
-    if request.query.get("gallery"):
-        jinja_ctx.pop("og_description", None)
-
     # oembed only for discord
     if "discord" in request.headers.get("User-Agent", "").lower():
         host = request.headers.get("Host", "")
@@ -121,6 +116,16 @@ async def embed(request: aiohttp.web_request.Request):
         jinja_ctx["oembed_url"] = oembed_endpoint + urllib.parse.urlencode(
             oembed_params
         )
+        # must not have trailing slash
+        jinja_ctx["mastodon_statuses_url"] = (
+            f"https://{host}/users/{post['user']['username']}/statuses/{int.from_bytes(post['post_id'].encode(), 'big')}"
+        )
+    pass
+
+    # gallery = no caption
+    if request.query.get("gallery"):
+        jinja_ctx["og_description"] = ""
+        jinja_ctx["oembed_url"] = ""
 
     return web.Response(
         body=render_embed(**jinja_ctx).encode(), content_type="text/html"
@@ -130,6 +135,7 @@ async def embed(request: aiohttp.web_request.Request):
 async def media_redirect(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     media_id = request.match_info.get("media_id", "")
+    is_preview = request.query.get("preview", False)
     post = await get_post(post_id)
 
     # logger.debug(f"media_redirect({post_id})")
@@ -140,6 +146,10 @@ async def media_redirect(request: aiohttp.web_request.Request):
         )
 
     media = post["medias"][int(media_id) - 1]
+    if is_preview and media.get("preview_url"):
+        return web.Response(
+            status=307, headers={"Location": media.get("preview_url", "")}
+        )
     return web.Response(status=307, headers={"Location": media["url"]})
 
 
@@ -189,6 +199,126 @@ async def oembed(request: aiohttp.web_request.Request):
     )
 
 
+async def mastodon_statuses(request: aiohttp.web_request.Request):
+    # Most code for this part are taken from FxEmbed
+    # https://github.com/FxEmbed/FxEmbed
+    try:
+        int_post_id = int(request.match_info.get("int_post_id", ""))
+    except ValueError:
+        logger.error(f"Invalid actpub post_id: {request.path}")
+        return web.Response(status=404)
+
+    post_id = int.to_bytes(int_post_id, 24, "big").decode().strip("\x00")
+    host = request.headers.get("Host", "")
+
+    post = await get_post(post_id)
+    if not post:
+        raise web.HTTPFound(f"https://www.instagram.com/p/{post_id}")
+
+    # create media attachment
+    media_attachments = []
+    for i, media in enumerate(post["medias"]):
+        if media["type"] == "GraphImage":
+            media_attachments.append(
+                {
+                    "id": "114163769487684704",
+                    "type": "image",
+                    "url": f"https://{host}/images/{post['post_id']}/{i+1}",
+                    "preview_url": None,
+                    "remote_url": None,
+                    "preview_remote_url": None,
+                    "text_url": None,
+                    "description": None,
+                    # TODO: Add meta
+                    # "meta": {
+                    #     "original": {
+                    #         "width": media["width"],
+                    #         "height": media["height"],
+                    #         "size": f"{media['width']}x{media['height']}",
+                    #         "aspect": media["width"] / media["height"],
+                    #     }
+                    # },
+                }
+            )
+        else:
+            media_attachments.append(
+                {
+                    "id": "114163769487684704",
+                    "type": "video",
+                    "url": f"https://{host}/videos/{post['post_id']}/{i+1}",
+                    "preview_url": f"https://{host}/videos/{post['post_id']}/{i+1}?preview=true",
+                    "remote_url": None,
+                    "preview_remote_url": None,
+                    "text_url": None,
+                    "description": None,
+                    # TODO: Add meta
+                    # "meta": {
+                    #     "original": {
+                    #         "width": 900,
+                    #         "height": 900,
+                    #         "size": f"900x900",
+                    #         "aspect": 1,
+                    #     }
+                    # },
+                }
+            )
+
+    return web.Response(
+        text=json.dumps(
+            {
+                "id": 0,
+                "url": f"https://www.instagram.com/p/{post['post_id']}",
+                "uri": f"https://www.instagram.com/p/{post['post_id']}",
+                # "created_at": "2025-04-11T06:34:46.886Z",
+                "edited_at": None,
+                "reblog": None,
+                "in_reply_to_id": None,
+                "in_reply_to_account_id": None,
+                "language": "en",
+                "content": post["caption"],
+                "spoiler_text": "",
+                "visibility": "public",
+                "application": {
+                    "name": "InstaFix",
+                    "website": None,
+                },
+                "media_attachments": media_attachments,
+                "account": {
+                    "id": 0,
+                    "display_name": post["user"].get("full_name", ""),
+                    "username": post["user"]["username"],
+                    "acct": post["user"]["username"],
+                    "url": f"https://www.instagram.com/{post['user']['username']}",
+                    "uri": f"https://www.instagram.com/{post['user']['username']}",
+                    # "created_at": "2025-05-11T06:34:46.886Z",
+                    "locked": False,
+                    "bot": False,
+                    "discoverable": True,
+                    "indexable": False,
+                    "group": False,
+                    "avatar": post["user"]["profile_pic"],
+                    "avatar_static": post["user"]["profile_pic"],
+                    "header": None,
+                    "header_static": None,
+                    "followers_count": 0,
+                    "following_count": 0,
+                    "statuses_count": 0,
+                    "hide_collections": False,
+                    "noindex": False,
+                    "emojis": [],
+                    "roles": [],
+                    "fields": [],
+                },
+                "mentions": [],
+                "tags": [],
+                "emojis": [],
+                "card": None,
+                "poll": None,
+            }
+        )
+    )
+
+
 if __name__ == "__main__":
     import asyncio
 
@@ -231,6 +361,7 @@ if __name__ == "__main__":
             web.get("/videos/{post_id}/{media_id}/", media_redirect),
             web.get("/grid/{post_id}/", grid),
             web.get("/oembed/", oembed),
+            web.get("/api/v1/statuses/{int_post_id}", mastodon_statuses),
         ]
     )
     web.run_app(
