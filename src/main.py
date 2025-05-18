@@ -134,6 +134,7 @@ async def embed(request: aiohttp.web_request.Request):
     if request.query.get("gallery"):
         jinja_ctx["og_description"] = ""
         jinja_ctx["oembed_url"] = ""
+        jinja_ctx["mastodon_statuses_url"] = None
 
     return web.Response(
         body=render_embed(**jinja_ctx).encode(), content_type="text/html"
