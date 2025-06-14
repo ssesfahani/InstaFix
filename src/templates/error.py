@@ -21,7 +21,7 @@ def render_error(
         <meta property="og:title" content="InstaFix" />
         <meta property="og:description" content="Post might be blocked. Reason: '{escape_html(error_message or '')}'"/>
         <meta property="og:site_name" content="InstaFix" />
-        <meta property="twitter:card" content="summary_large_image"/>
+        <meta property="twitter:card" content="summary"/>
     """
 
     html += f"""
