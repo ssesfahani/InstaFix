@@ -21,6 +21,8 @@ def post_id_to_media_id(code: str) -> int:
 
 
 async def get_media_ruling(post_id: str) -> dict:
+    return {} # temporarily disabled.
+
     headers = {
         "x-csrftoken": "-",
         "x-ig-app-id": "936619743392459",
