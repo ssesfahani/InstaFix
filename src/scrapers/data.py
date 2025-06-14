@@ -32,6 +32,12 @@ class Post(TypedDict):
     blocked: bool
 
 
+class RestrictedError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+
 # https://github.com/aio-libs/aiohttp/issues/4932#issuecomment-1611759696
 class HTTPSession:
     def __init__(self, headers: dict[str, str] = {}):
@@ -53,9 +59,11 @@ class HTTPSession:
     async def close(self) -> None:
         await self._session.close()
 
-    async def http_get(self, url: str) -> str:
+    async def http_get(self, url: str, params: dict = {}) -> str:
         async with proxy_limit:
-            async with self._session.request("GET", url, verify_ssl=False) as response:
+            async with self._session.request(
+                "GET", url, params=params, verify_ssl=False
+            ) as response:
                 response.raise_for_status()
                 return await response.text()
 

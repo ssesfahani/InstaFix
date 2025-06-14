@@ -12,8 +12,10 @@ from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
 from scrapers import get_post
+from scrapers.data import RestrictedError
 from scrapers.share import resolve_share_id
 from templates.embed import render_embed
+from templates.error import render_error
 
 
 def instagram_id_to_url(instagram_id):
@@ -68,7 +70,19 @@ async def embed(request: aiohttp.web_request.Request):
             logger.error(f"[{post_id}] Failed to resolve share id")
             raise web.HTTPFound(ig_url)
 
-    post = await get_post(post_id)
+    try:
+        post = await get_post(post_id)
+    except RestrictedError as e:
+        logger.error(f"[{post_id}] Failed to get post: {e}")
+        error_resp = render_error(
+            theme_color="#0084ff",
+            post_url=ig_url,
+            error_message=e.message,
+        )
+        return web.Response(
+            body=error_resp.encode(), content_type="text/html", status=403
+        )
+
     # logger.debug(f"embed({post_id})")
     # Return to original post if no post found
     if not post:

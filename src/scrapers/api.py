@@ -5,7 +5,40 @@ import aiohttp
 import aiohttp.client_exceptions
 from loguru import logger
 
-from scrapers.data import HTTPSession, Media, Post, User
+from scrapers.data import HTTPSession, Media, Post, RestrictedError, User
+
+
+def post_id_to_media_id(code: str) -> int:
+    chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+    # Convert code using character positions
+    number = 0
+    for char in code:
+        pos = chars.index(char)
+        number = number * 64 + pos
+
+    return number
+
+
+async def get_media_ruling(media_id: int) -> dict:
+    headers = {
+        "x-csrftoken": "-",
+        "x-ig-app-id": "936619743392459",
+        "x-ig-www-claim": "0",
+        "x-requested-with": "XMLHttpRequest",
+    }
+
+    params = {
+        "media_id": str(media_id),
+        "owner_id": "42",
+    }
+    async with HTTPSession(headers=headers) as session:
+        text = await session.http_get(
+            "https://www.instagram.com/api/v1/web/get_ruling_for_media_content_logged_out",
+            params=params,
+        )
+        query_json = json.loads(text)
+    return query_json
 
 
 async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
@@ -49,7 +82,9 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
 
     shortcode_media = data.get("shortcode_media", data).get("xdt_shortcode_media")
     if not shortcode_media:
-        return None
+        media_ruling = await get_media_ruling(post_id_to_media_id(post_id))
+        raise RestrictedError(message=media_ruling.get("description", ""))
+
     medias = []
     post_medias = shortcode_media.get("edge_sidecar_to_children", {}).get(
         "edges", [shortcode_media]
@@ -59,7 +94,11 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         media_url = media.get("video_url")
         if not media_url:
             media_url = media.get("display_url")
-        typename = media["__typename"].replace("XDTGraphImage", "GraphImage").replace("XDTGraphVideo", "GraphVideo")
+        typename = (
+            media["__typename"]
+            .replace("XDTGraphImage", "GraphImage")
+            .replace("XDTGraphVideo", "GraphVideo")
+        )
         medias.append(
             Media(
                 url=media_url,
