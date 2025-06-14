@@ -159,11 +159,12 @@ async def media_redirect(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
     media_id = request.match_info.get("media_id", "")
     is_preview = request.query.get("preview", False)
-    post = await get_post(post_id)
 
-    # logger.debug(f"media_redirect({post_id})")
-    # Return to original post if no post found
-    if not post:
+    try:
+        post = await get_post(post_id)
+        if not post:
+            raise RestrictedError(message="Unknown error (1)")
+    except RestrictedError as e:
         raise web.HTTPFound(
             f"https://www.instagram.com/p/{post_id}",
         )
@@ -185,9 +186,11 @@ async def grid(request: aiohttp.web_request.Request):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
             return web.Response(body=f.read(), content_type="image/jpeg")
 
-    post = await get_post(post_id)
-    # Return to original post if no post found
-    if not post:
+    try:
+        post = await get_post(post_id)
+        if not post:
+            raise RestrictedError(message="Unknown error (1)")
+    except RestrictedError as e:
         raise web.HTTPFound(
             f"https://www.instagram.com/p/{post_id}",
         )
@@ -234,9 +237,14 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
     post_id = int.to_bytes(int_post_id, 24, "big").decode().strip("\x00")
     host = request.headers.get("Host", "")
 
-    post = await get_post(post_id)
-    if not post:
-        raise web.HTTPFound(f"https://www.instagram.com/p/{post_id}")
+    try:
+        post = await get_post(post_id)
+        if not post:
+            raise RestrictedError(message="Unknown error (1)")
+    except RestrictedError as e:
+        raise web.HTTPFound(
+            f"https://www.instagram.com/p/{post_id}",
+        )
 
     # activitypub caption/content must be a html
     caption = post["caption"].replace("\n", "<br>")

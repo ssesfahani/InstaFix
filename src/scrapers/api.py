@@ -87,7 +87,9 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     shortcode_media = data.get("shortcode_media", data).get("xdt_shortcode_media")
     if not shortcode_media:
         media_ruling = await get_media_ruling(post_id_to_media_id(post_id))
-        raise RestrictedError(message=media_ruling.get("description", "Unknown error"))
+        raise RestrictedError(
+            message=media_ruling.get("description", "Unknown error (2)")
+        )
 
     medias = []
     post_medias = shortcode_media.get("edge_sidecar_to_children", {}).get(
