@@ -20,7 +20,7 @@ def post_id_to_media_id(code: str) -> int:
     return number
 
 
-async def get_media_ruling(media_id: int) -> dict:
+async def get_media_ruling(post_id: str) -> dict:
     headers = {
         "x-csrftoken": "-",
         "x-ig-app-id": "936619743392459",
@@ -29,7 +29,7 @@ async def get_media_ruling(media_id: int) -> dict:
     }
 
     params = {
-        "media_id": str(media_id),
+        "media_id": str(post_id_to_media_id(post_id)),
         "owner_id": "42",
     }
     try:
@@ -41,7 +41,9 @@ async def get_media_ruling(media_id: int) -> dict:
             )
             query_json = json.loads(text)
     except aiohttp.client_exceptions.ClientResponseError as e:
-        logger.error(f"[{media_id}] Error when fetching media ruling: {e}")
+        logger.error(f"[{post_id}] Error when fetching media ruling: {e}")
+        return {}
+    except json.decoder.JSONDecodeError:
         return {}
     return query_json
 
@@ -87,7 +89,7 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
 
     shortcode_media = data.get("shortcode_media", data).get("xdt_shortcode_media")
     if not shortcode_media:
-        media_ruling = await get_media_ruling(post_id_to_media_id(post_id))
+        media_ruling = await get_media_ruling(post_id)
         raise RestrictedError(
             message=media_ruling.get(
                 "description", media_ruling.get("message", "Unknown error (2)")
