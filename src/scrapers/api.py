@@ -32,12 +32,16 @@ async def get_media_ruling(media_id: int) -> dict:
         "media_id": str(media_id),
         "owner_id": "42",
     }
-    async with HTTPSession(headers=headers) as session:
-        text = await session.http_get(
-            "https://www.instagram.com/api/v1/web/get_ruling_for_media_content_logged_out",
-            params=params,
-        )
-        query_json = json.loads(text)
+    try:
+        async with HTTPSession(headers=headers) as session:
+            text = await session.http_get(
+                "https://www.instagram.com/api/v1/web/get_ruling_for_media_content_logged_out",
+                params=params,
+            )
+            query_json = json.loads(text)
+    except aiohttp.client_exceptions.ClientResponseError as e:
+        logger.error(f"[{media_id}] Error when fetching media ruling: {e}")
+        return {}
     return query_json
 
 
@@ -83,7 +87,7 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     shortcode_media = data.get("shortcode_media", data).get("xdt_shortcode_media")
     if not shortcode_media:
         media_ruling = await get_media_ruling(post_id_to_media_id(post_id))
-        raise RestrictedError(message=media_ruling.get("description", ""))
+        raise RestrictedError(message=media_ruling.get("description", "Unknown error"))
 
     medias = []
     post_medias = shortcode_media.get("edge_sidecar_to_children", {}).get(
