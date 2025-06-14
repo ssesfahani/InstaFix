@@ -59,10 +59,11 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         media_url = media.get("video_url")
         if not media_url:
             media_url = media.get("display_url")
+        typename = media["__typename"].replace("XDTGraphImage", "GraphImage").replace("XDTGraphVideo", "GraphVideo")
         medias.append(
             Media(
                 url=media_url,
-                type=media["__typename"],
+                type=typename,
                 width=media["dimensions"]["width"],
                 height=media["dimensions"]["height"],
                 duration=0,
