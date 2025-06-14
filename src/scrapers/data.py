@@ -59,20 +59,24 @@ class HTTPSession:
     async def close(self) -> None:
         await self._session.close()
 
-    async def http_get(self, url: str, params: dict = {}) -> str:
+    async def http_get(
+        self, url: str, params: dict = {}, ignore_status: bool = False
+    ) -> str:
         async with proxy_limit:
             async with self._session.request(
                 "GET", url, params=params, verify_ssl=False
             ) as response:
-                response.raise_for_status()
+                if not ignore_status:
+                    response.raise_for_status()
                 return await response.text()
 
-    async def http_post(self, url: str, data: dict) -> str:
+    async def http_post(self, url: str, data: dict, ignore_status: bool = False) -> str:
         async with proxy_limit:
             async with self._session.request(
                 "POST", url, data=data, verify_ssl=False
             ) as response:
-                response.raise_for_status()
+                if not ignore_status:
+                    response.raise_for_status()
                 return await response.text()
 
     async def http_redirect(self, url: str) -> str:
