@@ -40,7 +40,7 @@ class SQLiteCache:
         self._counter += 1
         if self._counter % 1000 == 0:
             self.evict()
-            remove_grid_cache()
+            remove_grid_cache(max_cache=10_000)
 
             self._counter = 0
 
