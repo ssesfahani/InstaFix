@@ -1,12 +1,31 @@
+import heapq
 import os
 import tempfile
+from collections import defaultdict
 from typing import List, Optional
 
 import aiohttp
-import networkx as nx
 import pyvips
 
 MAX_ROW_HEIGHT = 1000
+
+
+def dijkstra(graph, start, end):
+    heap = [(0, start, [])]  # (cost, current_node, path)
+    visited = set()
+
+    while heap:
+        cost, node, path = heapq.heappop(heap)
+        if node in visited:
+            continue
+        visited.add(node)
+        path = path + [node]
+        if node == end:
+            return path
+        for neighbor, weight in graph.get(node, []):
+            if neighbor not in visited:
+                heapq.heappush(heap, (cost + weight, neighbor, path))
+    return []
 
 
 def get_jpeg_dimensions(file_path):
@@ -99,14 +118,14 @@ def generate_grid(image_paths: List[str], out_fname: str) -> Optional[str]:
     canvas_w = int(avg_w * 1.5)
 
     # 3) Build graph of breakpoints with costs
-    G = nx.DiGraph()
+    graph = defaultdict(list)
     n = len(im_meta) - 1  # last index is the sentinel
     for i in range(n):
         for j, cost in create_graph(im_meta, i, canvas_w).items():
-            G.add_edge(i, j, weight=cost)
+            graph[i].append((j, cost))
 
     # 4) Shortest‐path from 0 → n
-    path = nx.shortest_path(G, 0, n, weight="weight")
+    path = dijkstra(graph, 0, n)
 
     # 5) Compute each row height and total canvas height
     row_heights = []
