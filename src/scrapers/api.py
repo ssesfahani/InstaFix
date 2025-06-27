@@ -21,7 +21,7 @@ def post_id_to_media_id(code: str) -> int:
 
 
 async def get_media_ruling(post_id: str) -> dict:
-    return {} # temporarily disabled.
+    return {}  # temporarily disabled.
 
     headers = {
         "x-csrftoken": "-",
@@ -79,7 +79,7 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
                 )
                 query_json = json.loads(text)
                 break
-        except aiohttp.client_exceptions.ClientResponseError as e:
+        except Exception as e:
             if i == MAX_RETRIES - 1:
                 logger.error(f"[{post_id}] Error when fetching post from API: {e}")
     else:
