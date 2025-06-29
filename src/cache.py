@@ -62,7 +62,7 @@ class LFUGridCache(LFUCache):
         return key, val
 
 
-@cached(LFUGridCache(maxsize=2, getsizeof=None))
+@cached(LFUGridCache(maxsize=10_000, getsizeof=None))
 def grid_cache_cb(post_id: str):
     return f"cache/grid/{post_id}.jpeg"
 
