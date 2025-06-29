@@ -18,6 +18,10 @@ from templates.embed import render_embed
 from templates.error import render_error
 
 
+def RedirectResponse(url):
+    return web.Response(status=307, headers={"Location": url})
+
+
 def instagram_id_to_url(instagram_id):
     # Split if there's an underscore
     if "_" in str(instagram_id):
@@ -50,7 +54,7 @@ async def embed(request: aiohttp.web_request.Request):
         r"(discordbot|telegrambot|facebook|whatsapp|firefox\/92|vkshare|revoltchat|preview|iframely)",
         request.headers.get("User-Agent", "").lower(),
     ):
-        raise web.HTTPFound(ig_url)
+        return RedirectResponse(ig_url)
 
     post_id = request.match_info.get("post_id", "")
     if post_id.isdigit():  # stories
@@ -68,7 +72,7 @@ async def embed(request: aiohttp.web_request.Request):
             post_id = resolve_id
         else:
             logger.error(f"[{post_id}] Failed to resolve share id")
-            raise web.HTTPFound(ig_url)
+            return RedirectResponse(ig_url)
 
     try:
         post = await get_post(post_id)
@@ -87,7 +91,7 @@ async def embed(request: aiohttp.web_request.Request):
     # Return to original post if no post found
     if not post:
         logger.warning(f"[{post_id}] Failed to get post, might be not found")
-        raise web.HTTPFound(ig_url)
+        return RedirectResponse(ig_url)
 
     jinja_ctx = {
         "theme_color": "#0084ff",
@@ -115,7 +119,9 @@ async def embed(request: aiohttp.web_request.Request):
 
     # direct = redirect to media url
     if request.query.get("direct"):
-        raise web.HTTPFound(jinja_ctx.get("image_url", jinja_ctx.get("video_url", "")))
+        return RedirectResponse(
+            jinja_ctx.get("image_url", jinja_ctx.get("video_url", ""))
+        )
 
     # oembed only for discord
     if "discord" in request.headers.get("User-Agent", "").lower():
@@ -160,17 +166,15 @@ async def media_redirect(request: aiohttp.web_request.Request):
         if not post:
             raise RestrictedError(message="Unknown error (1)")
     except RestrictedError as e:
-        raise web.HTTPFound(
-            f"https://www.instagram.com/p/{post_id}",
-        )
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
 
     if len(post["medias"]) < int(media_id) and media_id != "0":
-        raise web.HTTPFound(f"https://www.instagram.com/p/{post_id}")
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
 
     media = post["medias"][int(media_id) - 1]
     if is_preview and media.get("preview_url"):
-        raise web.HTTPFound(media.get("preview_url", ""))
-    raise web.HTTPFound(media["url"])
+        return RedirectResponse(media.get("preview_url", ""))
+    return RedirectResponse(media["url"])
 
 
 grid_sf = Singleflight[str, str | None]()
@@ -187,17 +191,17 @@ async def grid(request: aiohttp.web_request.Request):
         if not post:
             raise RestrictedError(message="Unknown error (1)")
     except RestrictedError as e:
-        raise web.HTTPFound(
-            f"https://www.instagram.com/p/{post_id}",
-        )
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
 
     images = [media["url"] for media in post["medias"] if media["type"] == "GraphImage"]
+    if len(images) == 0:
+        return RedirectResponse(f"/images/{post_id}/1")
 
     try:
         await grid_sf.do(post_id, grid_from_urls, images, f"cache/grid/{post_id}.jpeg")
     except Exception as e:
         logger.error(f"[{post_id}] Failed to generate grid image: {e}")
-        raise web.HTTPFound(f"/images/{post_id}/1")
+        return RedirectResponse(f"/images/{post_id}/1")
 
     with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
         return web.Response(body=f.read(), content_type="image/jpeg")
@@ -238,9 +242,7 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
         if not post:
             raise RestrictedError(message="Unknown error (1)")
     except RestrictedError as e:
-        raise web.HTTPFound(
-            f"https://www.instagram.com/p/{post_id}",
-        )
+        return RedirectResponse(f"https://www.instagram.com/p/{post_id}")
 
     # activitypub caption/content must be a html
     caption = post["caption"].replace("\n", "<br>")
