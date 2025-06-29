@@ -8,6 +8,7 @@ import aiohttp.web_request
 from aiohttp import web
 from loguru import logger
 
+from cache import grid_cache_cb
 from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
@@ -182,6 +183,8 @@ grid_sf = Singleflight[str, str | None]()
 
 async def grid(request: aiohttp.web_request.Request):
     post_id = request.match_info.get("post_id", "")
+    grid_cache_cb(post_id)  # for LFU caching
+
     if os.path.exists(f"cache/grid/{post_id}.jpeg"):
         with open(f"cache/grid/{post_id}.jpeg", "rb") as f:
             return web.Response(body=f.read(), content_type="image/jpeg")

@@ -1,6 +1,7 @@
 import os
 import time
 
+from cachetools import LFUCache, cached
 from lsm import LSM
 
 
@@ -46,12 +47,24 @@ class Cache:
             txn.commit()
 
 
-def remove_grid_cache(max_cache: int = 5_000):
-    current_cached = 0
-    for file in os.listdir("cache/grid"):
-        current_cached += 1
-        if current_cached > max_cache:
-            os.remove(f"cache/grid/{file}")
+class LFUGridCache(LFUCache):
+    def __init__(self, maxsize, getsizeof=None):
+        LFUCache.__init__(self, maxsize, getsizeof)
+
+    def popitem(self):
+        key, val = LFUCache.popitem(self)
+        # Evict grid by removing the file
+        try:
+            (fname,) = key
+            os.remove(f"cache/grid/{fname}.jpeg")
+        except FileNotFoundError:
+            pass
+        return key, val
+
+
+@cached(LFUGridCache(maxsize=2, getsizeof=None))
+def grid_cache_cb(post_id: str):
+    return f"cache/grid/{post_id}.jpeg"
 
 
 if os.path.exists("cache") is False:
@@ -59,3 +72,7 @@ if os.path.exists("cache") is False:
     os.makedirs("cache/grid")
 post_cache = Cache(db_path="cache/post_data.db", ttl=24 * 60 * 60)
 shareid_cache = Cache(db_path="cache/shareid_data.db", ttl=365 * 24 * 60 * 60)
+
+# Populate cache
+for file in os.listdir("cache/grid"):
+    grid_cache_cb(file.split(".")[0])
