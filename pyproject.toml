@@ -9,6 +9,7 @@ dependencies = [
     "black>=25.1.0",
     "isort>=6.0.1",
     "loguru>=0.7.3",
+    "lsm-db>=0.7.2",
     "pyvips>=2.2.3",
     "pyvips-binary>=8.16.1",
     "selectolax[cython]>=0.3.28",

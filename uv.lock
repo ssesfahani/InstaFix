@@ -473,6 +473,7 @@ dependencies = [
     { name = "black" },
     { name = "isort" },
     { name = "loguru" },
+    { name = "lsm-db" },
     { name = "pyvips" },
     { name = "pyvips-binary" },
     { name = "selectolax", extra = ["cython"] },
@@ -487,6 +488,7 @@ requires-dist = [
     { name = "black", specifier = ">=25.1.0" },
     { name = "isort", specifier = ">=6.0.1" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "lsm-db", specifier = ">=0.7.2" },
     { name = "pyvips", specifier = ">=2.2.3" },
     { name = "pyvips-binary", specifier = ">=8.16.1" },
     { name = "selectolax", extras = ["cython"], specifier = ">=0.3.28" },
@@ -516,6 +518,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/3a/05/a1dae3dffd1116099
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/29/0348de65b8cc732daa3e33e67806420b2ae89bdce2b04af740289c5c6c8c/loguru-0.7.3-py3-none-any.whl", hash = "sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c", size = 61595 },
 ]
+
+[[package]]
+name = "lsm-db"
+version = "0.7.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/f8/ff721800d48e5678255a9c49b31354eb32b3f79c273e115a49f26c162905/lsm-db-0.7.2.tar.gz", hash = "sha256:7cca678ade3d351525e272cb13a45cc42f3172d3ce08b3b9d6322692ca959f51", size = 480107 }
 
 [[package]]
 name = "multidict"

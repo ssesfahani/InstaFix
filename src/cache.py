@@ -1,76 +1,49 @@
 import os
-import sqlite3
 import time
 
+from lsm import LSM
 
-class SQLiteCache:
+
+class Cache:
     def __init__(self, db_path="cache.db", ttl=300):
         self.db_path = db_path
-        self.ttl = ttl
+        self.ttl_path = db_path + ".ttl"
+        self.ttl_ns = ttl * 1000 * 1000 * 1000
         self._counter = 0
         self.init_cache()
 
     def init_cache(self):
-        self.conn = sqlite3.connect(self.db_path)
-        self.cursor = self.conn.cursor()
-        self.create_table()
+        self.db = LSM(self.db_path)
+        self.ttl_db = LSM(self.ttl_path)
         self.evict()
 
-    def create_table(self):
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS cache (
-                key TEXT PRIMARY KEY,
-                value BLOB,
-                timestamp INTEGER
-            )
-            """
-        )
-        self.conn.commit()
-
     def set(self, key, value):
-        timestamp = int(time.time())
-        self.cursor.execute(
-            "REPLACE INTO cache (key, value, timestamp) VALUES (?, ?, ?)",
-            (key, value, timestamp),
-        )
-        self.conn.commit()
+        self.db[key] = value
+        self.ttl_db[str(time.time_ns() + self.ttl_ns)] = key
 
         # Evict every 1000 requests
         self._counter += 1
         if self._counter % 1000 == 0:
-            self.evict()
-            remove_grid_cache(max_cache=10_000)
-
             self._counter = 0
+            self.evict()
 
     def get(self, key):
-        self.cursor.execute("SELECT value, timestamp FROM cache WHERE key = ?", (key,))
-        row = self.cursor.fetchone()
-        if row:
-            value, timestamp = row
-            if int(time.time()) - timestamp < self.ttl:
-                return value
-            else:
-                self.delete(key)  # Remove expired entry
-        return None
-
-    def delete(self, key):
-        self.cursor.execute("DELETE FROM cache WHERE key = ?", (key,))
-        self.conn.commit()
-
-    def clear(self):
-        self.cursor.execute("DELETE FROM cache")
-        self.conn.commit()
-
-    def close(self):
-        self.conn.close()
+        try:
+            return self.db[key]
+        except KeyError:
+            return None
 
     def evict(self):
-        self.cursor.execute(
-            "DELETE FROM cache WHERE timestamp < ?", (int(time.time()) - self.ttl,)
-        )
-        self.conn.commit()
+        expired = list(self.ttl_db["0" : str(time.time_ns())])
+        with self.ttl_db.transaction() as txn:
+            for key, value in expired:
+                self.ttl_db.delete(key)
+            txn.commit()
+
+        with self.db.transaction() as txn:
+            for key, value in expired:
+                self.db.delete(value)
+            txn.commit()
 
 
 def remove_grid_cache(max_cache: int = 5_000):
@@ -84,5 +57,5 @@ def remove_grid_cache(max_cache: int = 5_000):
 if os.path.exists("cache") is False:
     os.makedirs("cache")
     os.makedirs("cache/grid")
-post_cache = SQLiteCache(db_path="cache/post_data.db", ttl=24 * 60 * 60)
-shareid_cache = SQLiteCache(db_path="cache/shareid_data.db", ttl=365 * 24 * 60 * 60)
+post_cache = Cache(db_path="cache/post_data.db", ttl=24 * 60 * 60)
+shareid_cache = Cache(db_path="cache/shareid_data.db", ttl=365 * 24 * 60 * 60)
