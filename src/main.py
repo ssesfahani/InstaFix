@@ -50,7 +50,7 @@ async def embed(request: aiohttp.web_request.Request):
         r"(discordbot|telegrambot|facebook|whatsapp|firefox\/92|vkshare|revoltchat|preview|iframely)",
         request.headers.get("User-Agent", "").lower(),
     ):
-        return web.Response(status=307, headers={"Location": ig_url})
+        raise web.HTTPFound(ig_url)
 
     post_id = request.match_info.get("post_id", "")
     if post_id.isdigit():  # stories
@@ -115,12 +115,7 @@ async def embed(request: aiohttp.web_request.Request):
 
     # direct = redirect to media url
     if request.query.get("direct"):
-        return web.Response(
-            status=307,
-            headers={
-                "Location": jinja_ctx.get("image_url", jinja_ctx.get("video_url", ""))
-            },
-        )
+        raise web.HTTPFound(jinja_ctx.get("image_url", jinja_ctx.get("video_url", "")))
 
     # oembed only for discord
     if "discord" in request.headers.get("User-Agent", "").lower():
@@ -174,10 +169,8 @@ async def media_redirect(request: aiohttp.web_request.Request):
 
     media = post["medias"][int(media_id) - 1]
     if is_preview and media.get("preview_url"):
-        return web.Response(
-            status=307, headers={"Location": media.get("preview_url", "")}
-        )
-    return web.Response(status=307, headers={"Location": media["url"]})
+        raise web.HTTPFound(media.get("preview_url", ""))
+    raise web.HTTPFound(media["url"])
 
 
 grid_sf = Singleflight[str, str | None]()
