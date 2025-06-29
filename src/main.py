@@ -164,7 +164,7 @@ async def media_redirect(request: aiohttp.web_request.Request):
             f"https://www.instagram.com/p/{post_id}",
         )
 
-    if len(post["medias"]) < (int(media_id) - 1):
+    if len(post["medias"]) < int(media_id) and media_id != "0":
         raise web.HTTPFound(f"https://www.instagram.com/p/{post_id}")
 
     media = post["medias"][int(media_id) - 1]
