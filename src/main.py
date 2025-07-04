@@ -40,7 +40,7 @@ def instagram_id_to_url(instagram_id):
         instagram_id = instagram_id // 64
         url_suffix = alphabet[remainder] + url_suffix
 
-    return url_suffix
+    return str(url_suffix)
 
 
 async def home(request: aiohttp.web_request.Request):
