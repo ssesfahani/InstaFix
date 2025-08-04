@@ -253,7 +253,7 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
     # create media attachment
     media_attachments = []
     for i, media in enumerate(post["medias"]):
-        if media["type"] == "GraphImage":
+        if media["type"] == "GraphImage" and media["type"] == post["medias"][0]["type"]:
             media_attachments.append(
                 {
                     "id": "114163769487684704",
@@ -275,7 +275,9 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
                     # },
                 }
             )
-        else:
+        elif (
+            media["type"] == "GraphVideo" and media["type"] == post["medias"][0]["type"]
+        ):
             media_attachments.append(
                 {
                     "id": "114163769487684704",
