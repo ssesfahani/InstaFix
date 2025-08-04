@@ -37,7 +37,6 @@ def render_embed(
         <meta property="og:title" content="{escape_html(shown_name)}" />
         <meta property="og:description" content="{escape_html(og_description or '')}"/>
         <meta property="og:site_name" content="{og_site_name}" />
-        <meta property="twitter:card" content="summary_large_image"/>
     """
 
     if image_url:
