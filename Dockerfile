@@ -29,11 +29,11 @@ COPY src/ ./src/
 RUN mkdir -p static cache/grid
 
 # Copy config example and create production config
-# COPY config.toml.example ./config.toml
-# RUN sed -i 's/HOST = "127.0.0.1"/HOST = "0.0.0.0"/' config.toml
+COPY config.toml.example ./config.toml
+RUN sed -i 's/HOST = "127.0.0.1"/HOST = "::"/' config.toml
 
 # Set environment variables for production
-# ENV HOST=0.0.0.0
+ENV HOST="::"
 ENV PORT=3000
 
 # Expose
