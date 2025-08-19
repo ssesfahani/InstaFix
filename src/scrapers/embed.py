@@ -58,7 +58,6 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                     timestamp = None
                     if "taken_at_timestamp" in shortcode_media:
                         timestamp = int(shortcode_media["taken_at_timestamp"])
-                        logger.debug(f"[{post_id}] Found timestamp in embed: {timestamp}")
 
                     # Extract likes and comments count - try multiple possible field names
                     likes_count = 0
