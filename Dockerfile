@@ -34,7 +34,6 @@ RUN sed -i 's/HOST = "127.0.0.1"/HOST = "0.0.0.0"/' config.toml
 
 # Set environment variables for production
 ENV HOST=0.0.0.0
-ENV PORT=3000
 
 # Expose the application port
 EXPOSE 3000/tcp
