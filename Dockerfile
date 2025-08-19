@@ -32,13 +32,11 @@ RUN mkdir -p static cache/grid
 COPY config.toml.example ./config.toml
 RUN sed -i 's/HOST = "127.0.0.1"/HOST = "0.0.0.0"/' config.toml
 
-# Expose port
-EXPOSE 3000
-
 # Set environment variables for production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
+# Expose the application port
 EXPOSE 3000/tcp
 
 # Run the application with uv run to ensure dependencies are available
