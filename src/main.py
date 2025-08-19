@@ -462,7 +462,7 @@ if __name__ == "__main__":
             web.get("/api/p/{post_id}", api_post_json),
         ]
     )
-    host = os.getenv("HOST", config.get("HOST", "0.0.0.0"))
-    port = int(os.getenv("PORT", config.get("PORT", 3000)))
+    host = config.get("HOST", "127.0.0.1")
+    port = config.get("PORT", 3000)
     logger.info(f"Starting server on http://{host}:{port}")
     web.run_app(app, host=host, port=port)
