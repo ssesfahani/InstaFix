@@ -3,5 +3,6 @@
 !*.py
 !README.md
 !templates/*.html
+!Dockerfile
 
 !*/
