@@ -32,6 +32,24 @@ class Post(TypedDict):
     blocked: bool
 
 
+class MediaJSON(TypedDict):
+    type: str
+    url: str
+
+
+class PostJSON(TypedDict):
+    post_id: str
+    username: str
+    avatar_url: NotRequired[str]
+    caption: str
+    medias: List[MediaJSON]
+    is_video_only: NotRequired[bool]
+    timestamp: NotRequired[int]
+    created_at: NotRequired[str]
+    likes_count: NotRequired[int]
+    comments_count: NotRequired[int]
+
+
 class RestrictedError(Exception):
     def __init__(self, message: str):
         super().__init__(message)

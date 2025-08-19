@@ -13,7 +13,7 @@ from config import config
 from internal.grid_layout import grid_from_urls
 from internal.singleflight import Singleflight
 from scrapers import get_post
-from scrapers.data import RestrictedError
+from scrapers.data import RestrictedError, PostJSON, MediaJSON
 from scrapers.share import resolve_share_id
 from templates.embed import render_embed
 from templates.error import render_error
@@ -356,6 +356,59 @@ async def mastodon_statuses(request: aiohttp.web_request.Request):
     )
 
 
+async def api_post_json(request: aiohttp.web_request.Request):
+    post_id = request.match_info.get("post_id", "")
+    if post_id[0] == "B" or post_id[0] == "_":
+        resolve_id = await resolve_share_id(post_id)
+        if resolve_id:
+            post_id = resolve_id
+        else:
+            logger.error(f"[{post_id}] Failed to resolve share id")
+            return web.Response(status=404, text="Post not found")
+
+    try:
+        post = await get_post(post_id)
+    except RestrictedError as e:
+        logger.error(f"[{post_id}] Failed to get post: {e}")
+        return web.Response(status=403, text=f"Access denied: {e.message}")
+
+    if not post:
+        logger.warning(f"[{post_id}] Failed to get post, might be not found")
+        return web.Response(status=404, text="Post not found")
+
+    # Convert internal media format to API format
+    medias_json = []
+    is_video_only = True
+    for media in post["medias"]:
+        media_type = "video" if media["type"] == "GraphVideo" else "image"
+        if media_type == "image":
+            is_video_only = False
+        medias_json.append(MediaJSON(type=media_type, url=media["url"]))
+
+    # Build the response according to PostJSON structure
+    response_data = PostJSON(
+        post_id=post["post_id"],
+        username=post["user"]["username"],
+        caption=post["caption"],
+        medias=medias_json,
+    )
+
+    # Add optional fields if available
+    if "profile_pic" in post["user"]:
+        response_data["avatar_url"] = post["user"]["profile_pic"]
+    
+    if len(post["medias"]) > 0 and all(m["type"] == "GraphVideo" for m in post["medias"]):
+        response_data["is_video_only"] = True
+    
+    if "timestamp" in post:
+        response_data["timestamp"] = post["timestamp"]
+
+    return web.Response(
+        text=json.dumps(response_data, indent=2),
+        content_type="application/json"
+    )
+
+
 if __name__ == "__main__":
     import asyncio
 
@@ -400,6 +453,7 @@ if __name__ == "__main__":
             web.get("/oembed/", oembed),
             web.get("/api/v1/statuses/{int_post_id}", mastodon_statuses),
             web.get("/api/v1/statuses/{int_post_id}/", mastodon_statuses),
+            web.get("/api/p/{post_id}", api_post_json),
         ]
     )
     web.run_app(
