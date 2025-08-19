@@ -39,5 +39,7 @@ EXPOSE 3000
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
+EXPOSE 3000/tcp
+
 # Run the application with uv run to ensure dependencies are available
 ENTRYPOINT ["uv", "run", "--", "python", "src/main.py"]
