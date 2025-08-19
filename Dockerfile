@@ -24,10 +24,9 @@ RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY src/ ./src/
-COPY static/ ./static/
 
-# Create cache directory
-RUN mkdir -p cache/grid
+# Create static and cache directories
+RUN mkdir -p static cache/grid
 
 # Copy config example and create production config
 COPY config.toml.example ./config.toml
