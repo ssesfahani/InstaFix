@@ -24,12 +24,12 @@ class Media(TypedDict):
 
 
 class Post(TypedDict):
-    timestamp: int
     post_id: str
     user: User
     caption: str
     medias: List[Media]
     blocked: bool
+    timestamp: NotRequired[int]
     likes_count: NotRequired[int]
     comments_count: NotRequired[int]
 

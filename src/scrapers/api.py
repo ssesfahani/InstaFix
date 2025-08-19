@@ -1,5 +1,4 @@
 import json
-import time
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -156,9 +155,15 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
     elif "comment_count" in shortcode_media:
         comments_count = shortcode_media["comment_count"]
     
+    # Extract timestamp from post data (if available)
+    timestamp = None
+    
+    # Instagram uses taken_at_timestamp for post creation time
+    if "taken_at_timestamp" in shortcode_media:
+        timestamp = int(shortcode_media["taken_at_timestamp"])
     
     return Post(
-        timestamp=int(time.time()),
+        timestamp=timestamp,
         post_id=post_id,
         user=user,
         caption=caption,

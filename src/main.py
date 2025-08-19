@@ -400,6 +400,7 @@ async def api_post_json(request: aiohttp.web_request.Request):
     if len(post["medias"]) > 0 and all(m["type"] == "GraphVideo" for m in post["medias"]):
         response_data["is_video_only"] = True
     
+    # Include timestamp only if available in the post data
     if "timestamp" in post:
         response_data["timestamp"] = post["timestamp"]
     

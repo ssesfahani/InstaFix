@@ -1,5 +1,4 @@
 import json
-import time
 from typing import List
 
 import aiohttp.client_exceptions
@@ -54,6 +53,12 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                                 preview_url=media.get("display_url"),
                             )
                         )
+
+                    # Extract timestamp if available
+                    timestamp = None
+                    if "taken_at_timestamp" in shortcode_media:
+                        timestamp = int(shortcode_media["taken_at_timestamp"])
+                        logger.debug(f"[{post_id}] Found timestamp in embed: {timestamp}")
 
                     # Extract likes and comments count - try multiple possible field names
                     likes_count = 0
@@ -112,14 +117,21 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         return None
 
     user = User(username=username, profile_pic=profile_pic)
-    post_data = Post(
-        timestamp=int(time.time()),
-        post_id=post_id,
-        user=user,
-        caption=caption,
-        medias=medias,
-        blocked="WatchOnInstagram" in html,
-    )
+    
+    # Prepare post data
+    post_data_dict = {
+        "post_id": post_id,
+        "user": user,
+        "caption": caption,
+        "medias": medias,
+        "blocked": "WatchOnInstagram" in html,
+    }
+    
+    # Add timestamp if we found it
+    if 'timestamp' in locals() and timestamp is not None:
+        post_data_dict["timestamp"] = timestamp
+        
+    post_data = Post(**post_data_dict)
     
     # Add likes and comments count if available
     if 'likes_count' in locals():
