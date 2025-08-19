@@ -29,15 +29,15 @@ COPY src/ ./src/
 RUN mkdir -p static cache/grid
 
 # Copy config example and create production config
-COPY config.toml.example ./config.toml
-RUN sed -i 's/HOST = "127.0.0.1"/HOST = "0.0.0.0"/' config.toml
+# COPY config.toml.example ./config.toml
+# RUN sed -i 's/HOST = "127.0.0.1"/HOST = "0.0.0.0"/' config.toml
 
 # Set environment variables for production
-ENV HOST=0.0.0.0
+# ENV HOST=0.0.0.0
 ENV PORT=3000
 
 # Expose
 EXPOSE 3000/tcp
 
 # Run the application with uv run to ensure dependencies are available
-ENTRYPOINT ["uv", "run", "--", "python", "src/main.py"]
+ENTRYPOINT ["uv", "run", "python", "src/main.py"]
