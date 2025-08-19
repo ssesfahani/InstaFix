@@ -40,4 +40,4 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 
 # Run the application with uv run to ensure dependencies are available
-CMD ["uv", "run", "--", "python", "src/main.py"]
+ENTRYPOINT ["uv", "run", "--", "python", "src/main.py"]
