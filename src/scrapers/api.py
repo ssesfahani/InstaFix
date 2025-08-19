@@ -133,6 +133,30 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         full_name=shortcode_media.get("owner", {}).get("full_name"),
         profile_pic=shortcode_media.get("owner", {}).get("profile_pic_url"),
     )
+    
+    # Extract likes and comments count - try multiple possible field names
+    likes_count = 0
+    comments_count = 0
+    
+    # Try different possible field names for likes
+    if "edge_media_preview_like" in shortcode_media:
+        likes_count = shortcode_media["edge_media_preview_like"].get("count", 0)
+    elif "edge_liked_by" in shortcode_media:
+        likes_count = shortcode_media["edge_liked_by"].get("count", 0)
+    elif "like_count" in shortcode_media:
+        likes_count = shortcode_media["like_count"]
+    elif "edge_media_to_like" in shortcode_media:
+        likes_count = shortcode_media["edge_media_to_like"].get("count", 0)
+    
+    # Try different possible field names for comments
+    if "edge_media_to_parent_comment" in shortcode_media:
+        comments_count = shortcode_media["edge_media_to_parent_comment"].get("count", 0)
+    elif "edge_media_to_comment" in shortcode_media:
+        comments_count = shortcode_media["edge_media_to_comment"].get("count", 0)
+    elif "comment_count" in shortcode_media:
+        comments_count = shortcode_media["comment_count"]
+    
+    
     return Post(
         timestamp=int(time.time()),
         post_id=post_id,
@@ -140,4 +164,6 @@ async def get_query_api(post_id: str, proxy: str = "") -> Post | None:
         caption=caption,
         medias=medias,
         blocked=False,
+        likes_count=likes_count,
+        comments_count=comments_count,
     )

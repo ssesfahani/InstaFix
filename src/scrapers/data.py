@@ -30,6 +30,8 @@ class Post(TypedDict):
     caption: str
     medias: List[Media]
     blocked: bool
+    likes_count: NotRequired[int]
+    comments_count: NotRequired[int]
 
 
 class MediaJSON(TypedDict):

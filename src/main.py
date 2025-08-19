@@ -402,6 +402,12 @@ async def api_post_json(request: aiohttp.web_request.Request):
     
     if "timestamp" in post:
         response_data["timestamp"] = post["timestamp"]
+    
+    if "likes_count" in post:
+        response_data["likes_count"] = post["likes_count"]
+    
+    if "comments_count" in post:
+        response_data["comments_count"] = post["comments_count"]
 
     return web.Response(
         text=json.dumps(response_data, indent=2),

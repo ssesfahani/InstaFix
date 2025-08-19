@@ -55,6 +55,29 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
                             )
                         )
 
+                    # Extract likes and comments count - try multiple possible field names
+                    likes_count = 0
+                    comments_count = 0
+                    
+                    # Try different possible field names for likes
+                    if "edge_media_preview_like" in shortcode_media:
+                        likes_count = shortcode_media["edge_media_preview_like"].get("count", 0)
+                    elif "edge_liked_by" in shortcode_media:
+                        likes_count = shortcode_media["edge_liked_by"].get("count", 0)
+                    elif "like_count" in shortcode_media:
+                        likes_count = shortcode_media["like_count"]
+                    elif "edge_media_to_like" in shortcode_media:
+                        likes_count = shortcode_media["edge_media_to_like"].get("count", 0)
+                    
+                    # Try different possible field names for comments
+                    if "edge_media_to_parent_comment" in shortcode_media:
+                        comments_count = shortcode_media["edge_media_to_parent_comment"].get("count", 0)
+                    elif "edge_media_to_comment" in shortcode_media:
+                        comments_count = shortcode_media["edge_media_to_comment"].get("count", 0)
+                    elif "comment_count" in shortcode_media:
+                        comments_count = shortcode_media["comment_count"]
+                    
+
                     if len(medias) > 0:
                         break
 
@@ -89,7 +112,7 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         return None
 
     user = User(username=username, profile_pic=profile_pic)
-    return Post(
+    post_data = Post(
         timestamp=int(time.time()),
         post_id=post_id,
         user=user,
@@ -97,3 +120,11 @@ async def get_embed(post_id: str, proxy: str = "") -> Post | None:
         medias=medias,
         blocked="WatchOnInstagram" in html,
     )
+    
+    # Add likes and comments count if available
+    if 'likes_count' in locals():
+        post_data["likes_count"] = likes_count
+    if 'comments_count' in locals():
+        post_data["comments_count"] = comments_count
+        
+    return post_data
